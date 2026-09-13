@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import { Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../src/lib/prisma';
 
@@ -8,27 +7,27 @@ async function main() {
 
   // Create Admin User
   const adminPassword = await bcrypt.hash('admin123', 10);
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'admin@velours.com' },
     update: {},
     create: {
       name: 'Velours Admin',
       email: 'admin@velours.com',
       passwordHash: adminPassword,
-      role: Role.ADMIN,
+      role: 'ADMIN',
     },
   });
 
   // Create Regular User
   const userPassword = await bcrypt.hash('user123', 10);
-  const user = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'customer@example.com' },
     update: {},
     create: {
       name: 'John Doe',
       email: 'customer@example.com',
       passwordHash: userPassword,
-      role: Role.USER,
+      role: 'USER',
     },
   });
 
