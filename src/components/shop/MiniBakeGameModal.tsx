@@ -1,101 +1,116 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useCartStore } from '@/stores/use-cart-store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Trophy, Lock, RefreshCw, X, CheckCircle2, Flame, Gift } from 'lucide-react';
+import { Sparkles, Trophy, Lock, X, CheckCircle2, HelpCircle, AlertCircle } from 'lucide-react';
 
 interface MiniBakeGameModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const CAKE_LAYERS = [
-  { id: 1, name: 'Sponge Bolu Lembut', color: 'bg-amber-200 border-amber-400 text-amber-900', icon: '🍞' },
-  { id: 2, name: 'Selai Stroberi Manis', color: 'bg-rose-400 border-rose-500 text-white', icon: '🍓' },
-  { id: 3, name: 'Krim Whipped Fluffy', color: 'bg-amber-50 border-amber-300 text-amber-900', icon: '🧁' },
-  { id: 4, name: 'Cokelat & Ceri Top', color: 'bg-amber-950 border-amber-900 text-amber-100', icon: '🍒' },
+interface Question {
+  id: number;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+const VELOURS_QUESTIONS: Question[] = [
+  {
+    id: 1,
+    question: 'Bahan utama apa yang digunakan Velours Patisserie untuk membuat tekstur pastry renyah dan harum khas Prancis?',
+    options: ['Margarin Olahan', 'Normandy Butter Asli Prancis', 'Minyak Kelapa Sawit', 'Mentega Putih'],
+    correctIndex: 1,
+    explanation: 'Velours Patisserie menggunakan Normandy Butter impor khas Prancis untuk cita rasa autentik!',
+  },
+  {
+    id: 2,
+    question: 'Teknik ragi & adonan apa yang dipakai Velours Patisserie untuk memanggang roti segar setiap pagi?',
+    options: ['Sourdough Fermentation (Fermentasi Alami)', 'Baking Powder Instan', 'Pengembang Sintetis', 'Ragi Kimia Tinggi'],
+    correctIndex: 0,
+    explanation: 'Seluruh roti kami dibuat menggunakan teknik Sourdough Fermentation alami tanpa bahan pengawet.',
+  },
+  {
+    id: 3,
+    question: 'Berapa batas minimal total belanja di Velours Patisserie untuk membuka kesempatan main Mini Game & diskon rahasia?',
+    options: ['Rp 50.000', 'Rp 75.000', 'Rp 100.000', 'Rp 250.000'],
+    correctIndex: 2,
+    explanation: 'Tepat sekali! Pembelian di atas Rp 100.000 memberikan 1x kesempatan main.',
+  },
 ];
 
 export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
-  const { totalPrice, applyDiscountCode, setHasPlayedGame } = useCartStore();
+  const { totalPrice, applyDiscountCode, appliedDiscount, hasPlayedGame, setHasPlayedGame } = useCartStore();
 
   const subtotal = totalPrice();
   const isEligible = subtotal >= 100000;
   const neededAmount = Math.max(0, 100000 - subtotal);
 
-  const [gameState, setGameState] = useState<'READY' | 'PLAYING' | 'SUCCESS' | 'TIME_OUT'>('READY');
-  const [currentLayer, setCurrentLayer] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(5.0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const [gameState, setGameState] = useState<'READY' | 'QUIZ' | 'RESULT' | 'ALREADY_PLAYED'>('READY');
   const [unlockedCode, setUnlockedCode] = useState('EASTERBAKE15');
-  const [copied, setCopied] = useState(false);
   const [applySuccessMsg, setApplySuccessMsg] = useState('');
-
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const formatIDR = (num: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 
-  // Reset states when modal opens
   useEffect(() => {
     if (isOpen) {
-      setGameState('READY');
-      setCurrentLayer(0);
-      setTimeLeft(5.0);
-      setCopied(false);
-      setApplySuccessMsg('');
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-  }, [isOpen]);
-
-  // Clean timer on unmount
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
-
-  const startGame = () => {
-    if (!isEligible) return;
-    setGameState('PLAYING');
-    setCurrentLayer(0);
-    setTimeLeft(5.0);
-
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    const startTime = Date.now();
-    const duration = 5000;
-
-    timerRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, (duration - elapsed) / 1000);
-      setTimeLeft(Number(remaining.toFixed(1)));
-
-      if (remaining <= 0) {
-        if (timerRef.current) clearInterval(timerRef.current);
-        setGameState((prev) => (prev === 'PLAYING' ? 'TIME_OUT' : prev));
+      if (hasPlayedGame) {
+        setGameState('ALREADY_PLAYED');
+      } else {
+        setGameState('READY');
+        setCurrentQuestionIndex(0);
+        setSelectedOption(null);
+        setScore(0);
+        setApplySuccessMsg('');
+        setCopied(false);
       }
-    }, 50);
+    }
+  }, [isOpen, hasPlayedGame]);
+
+  const handleStartQuiz = () => {
+    if (!isEligible || hasPlayedGame) return;
+    setGameState('QUIZ');
+    setCurrentQuestionIndex(0);
+    setSelectedOption(null);
+    setScore(0);
   };
 
-  const handleStackClick = () => {
-    if (gameState !== 'PLAYING') return;
+  const handleSelectOption = (index: number) => {
+    if (selectedOption !== null) return; // Prevent double selection
+    setSelectedOption(index);
 
-    const nextLayer = currentLayer + 1;
-    setCurrentLayer(nextLayer);
+    const isCorrect = index === VELOURS_QUESTIONS[currentQuestionIndex].correctIndex;
+    const newScore = isCorrect ? score + 1 : score;
+    if (isCorrect) setScore(newScore);
 
-    if (nextLayer >= CAKE_LAYERS.length) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setGameState('SUCCESS');
-      setHasPlayedGame(true);
+    // Auto advance after 1.2 seconds
+    setTimeout(() => {
+      if (currentQuestionIndex + 1 < VELOURS_QUESTIONS.length) {
+        setCurrentQuestionIndex((prev) => prev + 1);
+        setSelectedOption(null);
+      } else {
+        // Quiz Finished - Mark as Played (1x chance limit per payment session)
+        setHasPlayedGame(true);
+        setGameState('RESULT');
 
-      // Randomize Easter Egg reward for extra fun!
-      const codes = ['EASTERBAKE15', 'BAKER20K', 'SECRETBAKE10'];
-      const chosen = codes[Math.floor(Math.random() * codes.length)];
-      setUnlockedCode(chosen);
-    }
+        // Choose Easter Egg Code based on score
+        if (newScore >= 2) {
+          const codes = ['EASTERBAKE15', 'BAKER20K'];
+          setUnlockedCode(codes[Math.floor(Math.random() * codes.length)]);
+        } else {
+          setUnlockedCode('SECRETBAKE10');
+        }
+      }
+    }, 1200);
   };
 
   const handleApplyDiscount = () => {
@@ -109,24 +124,26 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
 
   if (!isOpen) return null;
 
+  const currentQ = VELOURS_QUESTIONS[currentQuestionIndex];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-background rounded-2xl shadow-2xl border border-amber-200/50 overflow-hidden flex flex-col">
-        {/* Header Bar */}
-        <div className="bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 text-amber-50 p-4 px-6 flex items-center justify-between">
+      <div className="relative w-full max-w-lg bg-background rounded-2xl shadow-2xl border border-amber-200/60 overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-amber-800 via-amber-900 to-orange-950 text-amber-50 p-4 px-6 flex items-center justify-between">
           <div className="flex items-center gap-2 font-serif font-bold text-lg">
             <Sparkles className="h-5 w-5 text-amber-300 animate-pulse" />
-            <span>Mini Bake Game: 5 Detik Layer Kue</span>
+            <span>Kuis Seputar Velours Patisserie</span>
           </div>
           <button
             onClick={onClose}
-            className="text-amber-200 hover:text-white p-1 rounded-full hover:bg-amber-800 transition"
+            className="text-amber-200 hover:text-white p-1 rounded-full hover:bg-amber-800/60 transition"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Content Body */}
+        {/* Body Content */}
         <div className="p-6 space-y-6">
           {!isEligible ? (
             /* Locked State for < 100.000 IDR */
@@ -137,18 +154,18 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
 
               <div>
                 <Badge variant="outline" className="border-amber-500 text-amber-800 bg-amber-50 mb-2">
-                  Persyaratan Belanja Belum Terpenuhi
+                  Syarat Belanja Belum Terpenuhi
                 </Badge>
-                <h3 className="text-xl font-bold text-slate-800 font-serif">Kesempatan Main Terkunci</h3>
+                <h3 className="text-xl font-bold text-slate-800 font-serif">Kuis Seputar Velours Terkunci</h3>
                 <p className="text-sm text-slate-600 mt-2 max-w-xs mx-auto">
-                  Game ini khusus untuk pembelian di atas <span className="font-bold text-amber-900">Rp 100.000</span>.
+                  Kuis ini khusus untuk pembelian di atas <span className="font-bold text-amber-900">Rp 100.000</span> (Hanya 1x kesempatan bermain sebelum pembayaran).
                 </p>
               </div>
 
               {/* Progress Bar */}
               <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-left space-y-2">
                 <div className="flex justify-between text-xs font-semibold text-slate-700">
-                  <span>Total Keranjang: {formatIDR(subtotal)}</span>
+                  <span>Keranjang Saat Ini: {formatIDR(subtotal)}</span>
                   <span>Target: {formatIDR(100000)}</span>
                 </div>
                 <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
@@ -158,127 +175,167 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
                   />
                 </div>
                 <p className="text-xs text-amber-800 font-medium text-center">
-                  Tambah produk senilai <span className="font-bold">{formatIDR(neededAmount)}</span> lagi untuk membuka 1x Kesempatan Main!
+                  Tambah pastry senilai <span className="font-bold">{formatIDR(neededAmount)}</span> lagi untuk membuka 1x Kesempatan Kuis!
                 </p>
               </div>
 
-              <Button onClick={onClose} className="w-full bg-amber-800 hover:bg-amber-900 text-white font-semibold">
-                Kembali Belanja Roti & Pastry
+              <Button onClick={onClose} className="w-full bg-amber-900 hover:bg-amber-950 text-white font-semibold">
+                Kembali Belanja Pastry
+              </Button>
+            </div>
+          ) : gameState === 'ALREADY_PLAYED' ? (
+            /* State when user has ALREADY played their 1x chance */
+            <div className="text-center py-6 space-y-5">
+              <div className="w-16 h-16 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <CheckCircle2 className="h-8 w-8 text-amber-700" />
+              </div>
+
+              <div>
+                <Badge className="bg-amber-800 text-white mb-2">1x Kesempatan Main Telah Digunakan</Badge>
+                <h3 className="text-2xl font-serif font-bold text-amber-950">Terima Kasih Sudah Mengikuti Kuis!</h3>
+                <p className="text-sm text-slate-600 mt-2 max-w-xs mx-auto">
+                  Anda sudah menggunakan 1x kesempatan main untuk pesanan ini sebelum melakukan pembayaran.
+                </p>
+              </div>
+
+              {appliedDiscount ? (
+                <div className="bg-emerald-50 border border-emerald-300 p-4 rounded-xl space-y-1 text-emerald-900">
+                  <div className="text-xs font-semibold">VOUCHER DISKON TERPASANG</div>
+                  <div className="text-xl font-mono font-bold">{appliedDiscount.code}</div>
+                  <div className="text-xs">{appliedDiscount.description}</div>
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl space-y-1 text-amber-900">
+                  <div className="text-xs font-semibold">KODE DISKON EASTER EGG ANDA</div>
+                  <div className="text-xl font-mono font-bold text-amber-950">{unlockedCode}</div>
+                  <Button onClick={handleApplyDiscount} size="sm" className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                    Pasang Kode Ini
+                  </Button>
+                </div>
+              )}
+
+              <Button onClick={onClose} className="w-full bg-amber-900 hover:bg-amber-950 text-white font-bold">
+                Tutup & Lanjut Ke Pembayaran
               </Button>
             </div>
           ) : (
-            /* Eligible State: Game Modes */
+            /* Active Game States */
             <>
               {gameState === 'READY' && (
                 <div className="text-center space-y-5 py-2">
                   <div className="w-16 h-16 bg-gradient-to-tr from-amber-500 to-amber-300 text-white rounded-full flex items-center justify-center mx-auto shadow-lg">
-                    <Trophy className="h-8 w-8" />
+                    <HelpCircle className="h-8 w-8" />
                   </div>
 
                   <div>
-                    <Badge className="bg-emerald-600 text-white hover:bg-emerald-700 mb-2">
+                    <Badge className="bg-emerald-600 text-white mb-2">
                       1x Kesempatan Bermain Aktif!
                     </Badge>
-                    <h3 className="text-2xl font-serif font-bold text-amber-950">Susun 4 Layer Kue!</h3>
-                    <p className="text-sm text-slate-600 mt-1 max-w-sm mx-auto">
-                      Klik tombol susun layer secepat mungkin sebelum waktu 5 detik habis untuk membuka Kode Diskon Easter Egg Rahasia!
+                    <h3 className="text-2xl font-serif font-bold text-amber-950">Kuis Seputar Velours</h3>
+                    <p className="text-sm text-slate-600 mt-2 max-w-sm mx-auto">
+                      Jawab 3 pertanyaan seputar kelezatan roti & pastry Velours Patisserie untuk membuka Kode Diskon Easter Egg Rahasia!
                     </p>
                   </div>
 
-                  <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 flex items-center justify-center gap-2 text-xs text-amber-900">
-                    <Flame className="h-4 w-4 text-amber-600 animate-bounce" />
-                    <span>Hadiah Easter Egg: Diskon hingga 15% / Rp 20.000 untuk pesanan ini!</span>
+                  <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+                    <div className="font-bold flex items-center justify-center gap-1">
+                      <AlertCircle className="h-3.5 w-3.5 text-amber-700" />
+                      <span>Catatan Penting:</span>
+                    </div>
+                    <p>Kuis ini hanya dapat dimainkan **1x kesempatan** sebelum melakukan pembayaran.</p>
                   </div>
 
                   <Button
-                    onClick={startGame}
-                    className="w-full py-6 text-lg font-bold bg-amber-800 hover:bg-amber-900 text-white shadow-lg hover:shadow-xl transition"
+                    onClick={handleStartQuiz}
+                    className="w-full py-6 text-lg font-bold bg-amber-900 hover:bg-amber-950 text-white shadow-lg hover:shadow-xl transition"
                   >
-                    🎮 Mulai Tantangan (5 Detik)
+                    🧠 Mulai Kuis Seputar Velours
                   </Button>
                 </div>
               )}
 
-              {gameState === 'PLAYING' && (
-                <div className="text-center space-y-4">
-                  {/* Timer & Layer Status */}
-                  <div className="flex justify-between items-center bg-amber-100/80 px-4 py-2 rounded-xl border border-amber-300">
-                    <div className="flex items-center gap-1 font-semibold text-slate-800">
-                      <span>Waktu:</span>
-                      <span className={`text-xl font-bold font-mono ${timeLeft <= 2 ? 'text-red-600 animate-ping' : 'text-amber-900'}`}>
-                        {timeLeft.toFixed(1)}s
-                      </span>
-                    </div>
-                    <div className="text-sm font-bold text-amber-900">
-                      Layer: {currentLayer} / {CAKE_LAYERS.length}
-                    </div>
+              {gameState === 'QUIZ' && (
+                <div className="space-y-5">
+                  {/* Progress Header */}
+                  <div className="flex justify-between items-center bg-amber-50 px-4 py-2 rounded-xl border border-amber-200 text-xs font-bold text-amber-900">
+                    <span>Pertanyaan {currentQuestionIndex + 1} dari {VELOURS_QUESTIONS.length}</span>
+                    <span>Skor: {score}</span>
                   </div>
 
-                  {/* Cake Display Area */}
-                  <div className="relative h-56 bg-slate-50 rounded-2xl border-2 border-dashed border-amber-300 flex flex-col justify-end items-center p-4 overflow-hidden">
-                    {/* Cake Plate */}
-                    <div className="w-44 h-4 bg-slate-300 rounded-full shadow-md z-10 border border-slate-400"></div>
+                  {/* Question Title */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 className="text-base font-bold text-slate-800 font-serif leading-snug">
+                      {currentQ.question}
+                    </h4>
+                  </div>
 
-                    {/* Cake Layers Container */}
-                    <div className="absolute bottom-6 flex flex-col-reverse items-center gap-1 w-full px-12 z-20">
-                      {CAKE_LAYERS.map((layer, idx) => {
-                        const isStacked = idx < currentLayer;
-                        if (!isStacked) return null;
-                        return (
-                          <div
-                            key={layer.id}
-                            className={`w-full py-2.5 rounded-lg border-2 font-bold text-xs flex items-center justify-center gap-2 shadow-md animate-in slide-in-from-top-6 duration-150 ${layer.color}`}
-                          >
-                            <span>{layer.icon}</span>
-                            <span>{layer.name}</span>
+                  {/* Options List */}
+                  <div className="space-y-2.5">
+                    {currentQ.options.map((option, idx) => {
+                      const isSelected = selectedOption === idx;
+                      const isCorrect = idx === currentQ.correctIndex;
+
+                      let btnStyle = 'border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 text-slate-800';
+                      if (selectedOption !== null) {
+                        if (isCorrect) {
+                          btnStyle = 'bg-emerald-100 border-emerald-500 text-emerald-950 font-bold';
+                        } else if (isSelected && !isCorrect) {
+                          btnStyle = 'bg-red-100 border-red-500 text-red-950 font-bold';
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          disabled={selectedOption !== null}
+                          onClick={() => handleSelectOption(idx)}
+                          className={`w-full text-left p-3.5 rounded-xl border-2 transition-all flex items-center justify-between text-sm ${btnStyle}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="w-6 h-6 rounded-full bg-slate-200/80 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
+                              {String.fromCharCode(65 + idx)}
+                            </span>
+                            <span>{option}</span>
                           </div>
-                        );
-                      })}
+                          {selectedOption !== null && isCorrect && (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {selectedOption !== null && (
+                    <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-xs text-amber-900 animate-in fade-in duration-200">
+                      <strong>Penjelasan:</strong> {currentQ.explanation}
                     </div>
-                  </div>
-
-                  {/* Stack Button */}
-                  <Button
-                    onClick={handleStackClick}
-                    className="w-full py-8 text-xl font-black bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all text-white shadow-xl rounded-xl"
-                  >
-                    🥞 SUSUN LAYER ({currentLayer + 1}/{CAKE_LAYERS.length})
-                  </Button>
+                  )}
                 </div>
               )}
 
-              {gameState === 'TIME_OUT' && (
-                <div className="text-center space-y-4 py-4">
-                  <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
-                    <RefreshCw className="h-8 w-8 animate-spin" />
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800">⏰ Waktu Habis!</h3>
-                  <p className="text-sm text-slate-600 max-w-xs mx-auto">
-                    Kamu belum selesai menyusun kue. Ayo coba lagi secepat kilat!
-                  </p>
-                  <Button onClick={startGame} className="w-full bg-amber-800 hover:bg-amber-900 text-white font-bold">
-                    🔄 Coba Lagi
-                  </Button>
-                </div>
-              )}
-
-              {gameState === 'SUCCESS' && (
+              {gameState === 'RESULT' && (
                 <div className="text-center space-y-5 py-2 animate-in zoom-in-95 duration-200">
                   <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
-                    <Gift className="h-8 w-8 text-emerald-700 animate-bounce" />
+                    <Trophy className="h-8 w-8 text-emerald-700 animate-bounce" />
                   </div>
 
                   <div>
-                    <Badge className="bg-amber-600 text-white mb-2">🎉 Victory Easter Egg Unlocked!</Badge>
-                    <h3 className="text-2xl font-serif font-bold text-amber-950">Selamat! Kue Selesai Disusun!</h3>
+                    <Badge className="bg-amber-800 text-white mb-2">Kuis Selesai!</Badge>
+                    <h3 className="text-2xl font-serif font-bold text-amber-950">
+                      Skor Anda: {score} / {VELOURS_QUESTIONS.length}
+                    </h3>
                     <p className="text-sm text-slate-600 mt-1">
-                      Kamu berhasil membuka Kode Diskon Easter Egg berikut:
+                      {score >= 2
+                        ? 'Luar biasa! Anda sangat mengenal kualitas Velours Patisserie!'
+                        : 'Terima kasih telah mengikuti kuis Velours Patisserie!'}
                     </p>
                   </div>
 
                   {/* Coupon Box */}
-                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-dashed border-amber-400 p-4 rounded-xl space-y-2">
-                    <div className="text-xs text-amber-800 font-medium">KODE DISKON EASTER EGG</div>
+                  <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-2 border-dashed border-amber-400 p-4 rounded-xl space-y-2">
+                    <div className="text-xs text-amber-800 font-bold uppercase tracking-wider">
+                      🎁 KODE DISKON EASTER EGG UNLOCKED
+                    </div>
                     <div className="text-2xl font-mono font-black text-amber-950 tracking-wider">
                       {unlockedCode}
                     </div>

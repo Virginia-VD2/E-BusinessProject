@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCartStore } from '@/stores/use-cart-store';
 import { MiniBakeGameModal } from '@/components/shop/MiniBakeGameModal';
-import { Sparkles, Gamepad2, Gift, ChevronRight, Lock } from 'lucide-react';
+import { Sparkles, HelpCircle, Gift, ChevronRight, Lock, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface GamificationBannerProps {
@@ -13,7 +13,7 @@ interface GamificationBannerProps {
 export function GamificationBanner({ variant = 'banner' }: GamificationBannerProps) {
   const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { totalPrice, appliedDiscount } = useCartStore();
+  const { totalPrice, appliedDiscount, hasPlayedGame } = useCartStore();
 
   useEffect(() => {
     setMounted(true);
@@ -45,26 +45,28 @@ export function GamificationBanner({ variant = 'banner' }: GamificationBannerPro
                 isEligible ? 'bg-amber-800 text-amber-100' : 'bg-amber-200 text-amber-800'
               }`}
             >
-              {isEligible ? <Gamepad2 className="h-5 w-5 animate-bounce" /> : <Lock className="h-5 w-5" />}
+              {isEligible ? <HelpCircle className="h-5 w-5 animate-pulse" /> : <Lock className="h-5 w-5" />}
             </div>
             <div>
               <div className="text-xs font-bold font-serif text-amber-950 flex items-center gap-1.5">
-                <span>Mini Bake Game (Diskon Easter Egg)</span>
+                <span>Kuis Seputar Velours (Diskon Easter Egg)</span>
                 {isEligible && (
-                  <span className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-sans">
-                    1x Main
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-sans font-bold ${hasPlayedGame ? 'bg-amber-800 text-white' : 'bg-emerald-600 text-white'}`}>
+                    {hasPlayedGame ? 'Sudah Dimainkan (1x)' : '1x Main'}
                   </span>
                 )}
               </div>
               <p className="text-xs text-amber-900/80 mt-0.5">
                 {isEligible
-                  ? 'Mainkan game 5 detik & klaim kode diskon rahasia!'
-                  : `Kurang ${formatIDR(neededAmount)} lagi untuk 1x kesempatan main`}
+                  ? hasPlayedGame
+                    ? 'Lihat/Pasang voucher diskon hasil kuis Anda'
+                    : 'Jawab kuis & buka kode diskon rahasia 1x sebelum bayar!'
+                  : `Kurang ${formatIDR(neededAmount)} lagi untuk 1x kesempatan kuis`}
               </p>
             </div>
           </div>
           <Button size="sm" variant={isEligible ? 'default' : 'outline'} className={isEligible ? 'bg-amber-800 hover:bg-amber-900 text-white shrink-0' : 'border-amber-300 text-amber-900 shrink-0'}>
-            {isEligible ? 'Main' : 'Info'}
+            {isEligible ? (hasPlayedGame ? 'Voucher' : 'Kuis') : 'Info'}
           </Button>
         </div>
 
@@ -81,15 +83,17 @@ export function GamificationBanner({ variant = 'banner' }: GamificationBannerPro
           className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-amber-800 to-amber-900 text-amber-50 p-3.5 rounded-full shadow-2xl hover:scale-105 transition-all border-2 border-amber-300/40 flex items-center gap-2 group"
         >
           <div className="relative">
-            <Gamepad2 className="h-6 w-6 text-amber-300 group-hover:rotate-12 transition-transform" />
-            {isEligible && (
+            <HelpCircle className="h-6 w-6 text-amber-300 group-hover:rotate-12 transition-transform" />
+            {isEligible && !hasPlayedGame && (
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
               </span>
             )}
           </div>
-          <span className="text-xs font-bold hidden sm:inline pr-1">Mini Bake Game</span>
+          <span className="text-xs font-bold hidden sm:inline pr-1">
+            {hasPlayedGame ? 'Voucher Diskon' : 'Kuis Seputar Velours'}
+          </span>
         </button>
 
         <MiniBakeGameModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
@@ -119,22 +123,32 @@ export function GamificationBanner({ variant = 'banner' }: GamificationBannerPro
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="font-serif font-bold text-base sm:text-lg tracking-wide">
-                  🎮 Mini Bake Game & Easter Egg Diskon
+                  🧠 Kuis Seputar Velours & Diskon Easter Egg
                 </h4>
-                {appliedDiscount && (
+                {appliedDiscount ? (
                   <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[11px] px-2 py-0.5 rounded-full font-bold">
                     {appliedDiscount.code} Aktif
                   </span>
-                )}
+                ) : hasPlayedGame ? (
+                  <span className="bg-amber-500/30 text-amber-200 border border-amber-400/40 text-[11px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-amber-300" /> 1x Kesempatan Selesai
+                  </span>
+                ) : null}
               </div>
               <p className={`text-xs sm:text-sm mt-1 max-w-xl ${isEligible ? 'text-amber-200/90' : 'text-amber-900/80'}`}>
                 {isEligible ? (
-                  <span>
-                    🎉 <strong>Hore! 1x Kesempatan bermain terbuka!</strong> Susun layer kue 5 detik dan dapatkan Voucher Diskon Easter Egg hingga 15%!
-                  </span>
+                  hasPlayedGame ? (
+                    <span>
+                      🎉 <strong>Anda telah menyelesaikan 1x kesempatan kuis!</strong> Kode voucher diskon Easter Egg Anda siap digunakan di keranjang.
+                    </span>
+                  ) : (
+                    <span>
+                      🎉 <strong>Hore! 1x Kesempatan kuis terbuka!</strong> Jawab 3 pertanyaan seputar Velours Patisserie & buka Voucher Diskon Easter Egg hingga 15%!
+                    </span>
+                  )
                 ) : (
                   <span>
-                    Belanja di atas <strong className="underline">Rp 100.000</strong> untuk membuka Mini Bake Game & diskon rahasia! (Masih kurang{' '}
+                    Belanja di atas <strong className="underline">Rp 100.000</strong> untuk membuka Kuis Seputar Velours & diskon rahasia! (Masih kurang{' '}
                     <strong className="text-amber-950 font-bold">{formatIDR(neededAmount)}</strong> lagi)
                   </span>
                 )}
@@ -153,11 +167,11 @@ export function GamificationBanner({ variant = 'banner' }: GamificationBannerPro
           >
             {isEligible ? (
               <span className="flex items-center gap-2">
-                <Gift className="h-4 w-4" /> Main & Klaim Diskon <ChevronRight className="h-4 w-4" />
+                <Gift className="h-4 w-4" /> {hasPlayedGame ? 'Lihat Voucher' : 'Mulai Kuis'} <ChevronRight className="h-4 w-4" />
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <Lock className="h-4 w-4" /> Cek Mini Game
+                <Lock className="h-4 w-4" /> Cek syarat kuis
               </span>
             )}
           </Button>
