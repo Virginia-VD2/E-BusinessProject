@@ -24,6 +24,11 @@ export async function createCheckoutSessionAction(data: {
   const currentUserId = session?.user?.id || data.userId || null;
   const subtotal = data.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
+  // Clean and validate email for Midtrans API requirements
+  const rawEmail = (data.customer.email || '').trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const validEmail = emailRegex.test(rawEmail) ? rawEmail : 'customer@velourspatisserie.web.id';
+
   // Server side discount calculation
   let discountAmount = 0;
   let appliedCode = '';
@@ -128,9 +133,9 @@ export async function createCheckoutSessionAction(data: {
       },
       item_details: itemDetails,
       customer_details: {
-        first_name: data.customer.name,
-        email: data.customer.email,
-        phone: data.customer.phone || '',
+        first_name: data.customer.name.trim() || 'Customer',
+        email: validEmail,
+        phone: data.customer.phone?.trim() || '',
       },
     };
 
