@@ -1,22 +1,26 @@
 import nodemailer from 'nodemailer';
 
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
-const SMTP_FROM = process.env.SMTP_FROM || 'Velours Patisserie <noreply@velourspatisserie.web.id>';
+const SMTP_FROM = process.env.SMTP_FROM || 'Velours Patisserie <dungusvirginia2@gmail.com>';
 
 // Create Nodemailer Transporter
 const createTransporter = () => {
   if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+    const isSecure = SMTP_PORT === 465;
     return nodemailer.createTransport({
       host: SMTP_HOST,
       port: SMTP_PORT,
-      secure: SMTP_PORT === 465,
+      secure: isSecure,
       auth: {
         user: SMTP_USER,
         pass: SMTP_PASS,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
     });
   }
   return null;
@@ -42,7 +46,7 @@ export async function sendRegistrationWelcomeEmail(userEmail: string, userName: 
           .header { background-color: #78350f; padding: 30px 20px; text-align: center; color: #fef3c7; }
           .header h1 { font-family: Georgia, serif; margin: 0; font-size: 26px; letter-spacing: 1px; }
           .content { padding: 30px 25px; line-height: 1.6; }
-          .welcome-badge { display: inline-block; background-color: #fef3c7; color: #92400e; font-weight: bold; font-size: 12px; padding: 6px 12px; rounded: 20px; margin-bottom: 15px; border-radius: 20px; }
+          .welcome-badge { display: inline-block; background-color: #fef3c7; color: #92400e; font-weight: bold; font-size: 12px; padding: 6px 12px; border-radius: 20px; margin-bottom: 15px; }
           .button { display: inline-block; background-color: #78350f; color: #ffffff !important; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 8px; margin-top: 20px; }
           .footer { background-color: #faf5eb; padding: 20px; text-align: center; font-size: 12px; color: #92400e; border-top: 1px solid #f3e8d6; }
         </style>
@@ -81,13 +85,13 @@ export async function sendRegistrationWelcomeEmail(userEmail: string, userName: 
   }
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: SMTP_FROM,
       to: userEmail,
       subject: '✨ Selamat Datang di Velours Patisserie - Konfirmasi Pendaftaran',
       html: htmlContent,
     });
-    console.log(`[EMAIL SUCCESS] Registration email sent to: ${userEmail}`);
+    console.log(`[EMAIL SUCCESS] Registration email sent to ${userEmail} (${info.messageId})`);
     return { success: true };
   } catch (error) {
     console.error(`[EMAIL ERROR] Failed to send registration email to ${userEmail}:`, error);
@@ -136,7 +140,7 @@ export async function sendOrderConfirmationEmail(orderData: {
           .header h1 { font-family: Georgia, serif; margin: 0; font-size: 26px; }
           .content { padding: 30px 25px; line-height: 1.6; }
           .order-number { background-color: #fef3c7; color: #78350f; font-family: monospace; font-weight: bold; font-size: 16px; padding: 8px 16px; border-radius: 8px; display: inline-block; margin-bottom: 15px; }
-          table { w-full; width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
           th { background-color: #faf5eb; color: #78350f; padding: 10px; text-align: left; border-bottom: 2px solid #f3e8d6; }
           .totals { font-size: 14px; line-height: 1.8; }
           .grand-total { font-size: 18px; font-weight: bold; color: #78350f; border-top: 2px solid #78350f; padding-top: 8px; margin-top: 8px; }
@@ -186,7 +190,7 @@ export async function sendOrderConfirmationEmail(orderData: {
               `
                   : ''
               }
-              <div class="grand-total" style="display: flex; justify-between: space-between;">
+              <div class="grand-total" style="display: flex; justify-content: space-between;">
                 <span>Total Bayar:</span>
                 <span>${formatIDR(orderData.totalAmount)}</span>
               </div>
@@ -212,13 +216,13 @@ export async function sendOrderConfirmationEmail(orderData: {
   }
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: SMTP_FROM,
       to: orderData.userEmail,
       subject: `🍰 Konfirmasi Pesanan ${orderData.orderNumber} - Velours Patisserie`,
       html: htmlContent,
     });
-    console.log(`[EMAIL SUCCESS] Order confirmation email sent to: ${orderData.userEmail}`);
+    console.log(`[EMAIL SUCCESS] Order confirmation email sent to ${orderData.userEmail} (${info.messageId})`);
     return { success: true };
   } catch (error) {
     console.error(`[EMAIL ERROR] Failed to send order confirmation email to ${orderData.userEmail}:`, error);
