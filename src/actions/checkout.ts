@@ -5,14 +5,43 @@ import { snap, coreApi } from '@/lib/midtrans';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { auth } from '@/auth';
 
+const SERVER_DISCOUNTS: Record<
+  string,
+  { type: 'percentage' | 'fixed'; value: number; minSpend: number }
+> = {
+  EASTERBAKE15: { type: 'percentage', value: 15, minSpend: 100000 },
+  BAKER20K: { type: 'fixed', value: 20000, minSpend: 100000 },
+  SECRETBAKE10: { type: 'percentage', value: 10, minSpend: 100000 },
+};
+
 export async function createCheckoutSessionAction(data: {
   userId?: string;
   items: Array<{ id: string; name: string; price: number; quantity: number }>;
   customer: { name: string; email: string; phone?: string; address: string };
+  discountCode?: string;
 }) {
   const session = await auth();
   const currentUserId = session?.user?.id || data.userId || null;
-  const totalAmount = data.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const subtotal = data.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  // Server side discount calculation
+  let discountAmount = 0;
+  let appliedCode = '';
+  if (data.discountCode) {
+    const cleanCode = data.discountCode.trim().toUpperCase();
+    const promo = SERVER_DISCOUNTS[cleanCode];
+
+    if (promo && subtotal >= promo.minSpend) {
+      appliedCode = cleanCode;
+      if (promo.type === 'percentage') {
+        discountAmount = Math.round((subtotal * promo.value) / 100);
+      } else {
+        discountAmount = Math.min(promo.value, subtotal);
+      }
+    }
+  }
+
+  const finalTotalAmount = Math.max(0, subtotal - discountAmount);
   const orderNumber = `ORD-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
   try {
@@ -25,7 +54,7 @@ export async function createCheckoutSessionAction(data: {
         });
 
         if (!product || product.stock < item.quantity) {
-          throw new Error(`Insufficient stock for ${product?.name ?? item.id}`);
+          throw new Error(`Stock tidak cukup untuk ${product?.name ?? item.id}`);
         }
 
         await tx.product.update({
@@ -41,7 +70,7 @@ export async function createCheckoutSessionAction(data: {
           userId: currentUserId,
           status: OrderStatus.PENDING,
           paymentStatus: PaymentStatus.PENDING,
-          totalAmount,
+          totalAmount: finalTotalAmount,
           shippingAddress: JSON.stringify(data.customer.address),
           items: {
             create: data.items.map((item) => ({
@@ -53,21 +82,51 @@ export async function createCheckoutSessionAction(data: {
         },
       });
 
+      // Log discount usage if applied
+      if (discountAmount > 0) {
+        await tx.activityLog.create({
+          data: {
+            userId: currentUserId,
+            action: 'DISCOUNT_APPLIED',
+            entity: 'Order',
+            entityId: newOrder.id,
+            details: JSON.stringify({
+              code: appliedCode,
+              subtotal,
+              discountAmount,
+              finalTotalAmount,
+            }),
+          },
+        });
+      }
+
       return newOrder;
     });
 
     // 3. Generate Midtrans Snap Token
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const itemDetails: any[] = data.items.map((item) => ({
+      id: item.id,
+      price: item.price,
+      quantity: item.quantity,
+      name: item.name.substring(0, 50),
+    }));
+
+    if (discountAmount > 0) {
+      itemDetails.push({
+        id: 'DISCOUNT',
+        price: -discountAmount,
+        quantity: 1,
+        name: `Diskon Easter Egg (${appliedCode})`.substring(0, 50),
+      });
+    }
+
     const parameter = {
       transaction_details: {
         order_id: order.orderNumber,
         gross_amount: order.totalAmount,
       },
-      item_details: data.items.map((item) => ({
-        id: item.id,
-        price: item.price,
-        quantity: item.quantity,
-        name: item.name.substring(0, 50),
-      })),
+      item_details: itemDetails,
       customer_details: {
         first_name: data.customer.name,
         email: data.customer.email,
@@ -152,7 +211,6 @@ export async function syncOrderStatusAction(orderNumber: string) {
     }
 
     // Query Midtrans status API directly
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     let midtransStatus: any = null;
     try {
       midtransStatus = await coreApi.transaction.status(orderNumber);

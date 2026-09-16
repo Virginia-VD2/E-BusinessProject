@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { AIChatbot } from '@/components/shop/AIChatbot';
 import { Header } from '@/components/shop/Header';
+import { GamificationBanner } from '@/components/shop/GamificationBanner';
 
 export const revalidate = 60; // Refresh dynamic content every minute
 
@@ -23,7 +24,7 @@ export default async function HomePage() {
       <Header />
 
       {/* Hero Banner */}
-      <section className="relative bg-amber-900 text-amber-50 py-20 px-4 text-center">
+      <section className="relative bg-amber-900 text-amber-50 py-16 px-4 text-center">
         <div className="max-w-3xl mx-auto space-y-4">
           <h1 className="font-serif text-4xl sm:text-5xl font-extrabold tracking-tight">
             Artisanal French Bakery & Pastries
@@ -34,25 +35,30 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Product Catalog Grid */}
-      <main className="flex-1 container mx-auto px-4 py-12">
-        <h2 className="font-serif text-2xl sm:text-3xl font-bold text-amber-950 mb-8 text-center sm:text-left">
-          Our Fresh Pastries
-        </h2>
+      {/* Main Container */}
+      <main className="flex-1 container mx-auto px-4 py-8 space-y-8">
+        {/* Gamification Banner Promo */}
+        <GamificationBanner variant="banner" />
 
-        {products.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-amber-100 p-8 shadow-sm">
-            <p className="text-muted-foreground text-lg">
-              No products found. Run <code className="bg-muted px-2 py-1 rounded text-sm font-mono">npx prisma db seed</code> to load default bakery items.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
+        <div>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-amber-950 mb-8 text-center sm:text-left">
+            Our Fresh Pastries
+          </h2>
+
+          {products.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg border border-amber-100 p-8 shadow-sm">
+              <p className="text-muted-foreground text-lg">
+                No products found. Run <code className="bg-muted px-2 py-1 rounded text-sm font-mono">npx prisma db seed</code> to load default bakery items.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Footer */}
@@ -61,6 +67,9 @@ export default async function HomePage() {
           © {new Date().getFullYear()} Velours Patisserie. All rights reserved.
         </div>
       </footer>
+
+      {/* Floating Gamification Trigger */}
+      <GamificationBanner variant="floating" />
 
       {/* AI Virtual Assistant */}
       <AIChatbot />
