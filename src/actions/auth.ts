@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { Role } from '@prisma/client';
+import { sendRegistrationWelcomeEmail } from '@/lib/email';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -33,13 +34,18 @@ export async function registerUserAction(formData: FormData) {
 
     // Hash password & Create user
     const passwordHash = await bcrypt.hash(password, 10);
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         name,
         email,
         passwordHash,
         role: Role.USER,
       },
+    });
+
+    // Send Welcome Email asynchronously
+    sendRegistrationWelcomeEmail(newUser.email, newUser.name).catch((err) => {
+      console.error('Failed to dispatch registration welcome email:', err);
     });
 
     return { success: true };

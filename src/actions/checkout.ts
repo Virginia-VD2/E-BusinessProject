@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { snap, coreApi } from '@/lib/midtrans';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { auth } from '@/auth';
+import { sendOrderConfirmationEmail } from '@/lib/email';
 
 const SERVER_DISCOUNTS: Record<
   string,
@@ -148,6 +149,20 @@ export async function createCheckoutSessionAction(data: {
         snapToken: transaction.token,
         snapRedirectUrl: transaction.redirect_url,
       },
+    });
+
+    // 5. Send Order Confirmation Email asynchronously to user's email
+    sendOrderConfirmationEmail({
+      userEmail: validEmail,
+      userName: data.customer.name.trim() || 'Pelanggan Setia',
+      orderNumber: order.orderNumber,
+      items: data.items,
+      totalAmount: finalTotalAmount,
+      discountAmount,
+      discountCode: appliedCode,
+      shippingAddress: data.customer.address,
+    }).catch((err) => {
+      console.error('Failed to dispatch order confirmation email:', err);
     });
 
     return { success: true, snapToken: transaction.token, orderNumber: order.orderNumber };
