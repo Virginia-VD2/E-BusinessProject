@@ -34,6 +34,13 @@ export function CheckoutForm() {
   const [couponMsg, setCouponMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [snapData, setSnapData] = useState<{ token: string; orderNumber: string } | null>(null);
+  const [orderSummary, setOrderSummary] = useState<{
+    items: Array<{ id: string; name: string; price: number; quantity: number }>;
+    subtotal: number;
+    discountAmount: number;
+    discountCode?: string;
+    finalTotal: number;
+  } | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -60,18 +67,32 @@ export function CheckoutForm() {
     e.preventDefault();
     if (items.length === 0) return;
 
+    // Preserve order summary before clearing cart
+    const currentSubtotal = totalPrice();
+    const currentDiscount = discountAmount();
+    const currentCode = appliedDiscount?.code;
+    const currentFinal = finalPrice();
+    const currentItems = items.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity }));
+
     setLoading(true);
     setError('');
 
     const res = await createCheckoutSessionAction({
-      items: items.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
+      items: currentItems,
       customer: formData,
-      discountCode: appliedDiscount?.code,
+      discountCode: currentCode,
     });
 
     setLoading(false);
 
     if (res.success && res.snapToken) {
+      setOrderSummary({
+        items: currentItems,
+        subtotal: currentSubtotal,
+        discountAmount: currentDiscount,
+        discountCode: currentCode,
+        finalTotal: currentFinal,
+      });
       setSnapData({ token: res.snapToken, orderNumber: res.orderNumber! });
       clearCart();
     } else {
@@ -86,6 +107,13 @@ export function CheckoutForm() {
       </Card>
     );
   }
+
+  // Active items and totals (either from saved summary after snap generated, or live cart store)
+  const displayItems = orderSummary ? orderSummary.items : items;
+  const displaySubtotal = orderSummary ? orderSummary.subtotal : totalPrice();
+  const displayDiscountAmount = orderSummary ? orderSummary.discountAmount : discountAmount();
+  const displayDiscountCode = orderSummary ? orderSummary.discountCode : appliedDiscount?.code;
+  const displayFinalTotal = orderSummary ? orderSummary.finalTotal : finalPrice();
 
   return (
     <div className="space-y-8">
@@ -104,6 +132,7 @@ export function CheckoutForm() {
                 <label className="text-sm font-medium mb-1 block">Full Name</label>
                 <Input
                   required
+                  disabled={!!snapData}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Jane Doe"
@@ -114,6 +143,7 @@ export function CheckoutForm() {
                 <Input
                   type="email"
                   required
+                  disabled={!!snapData}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="jane@example.com"
@@ -123,6 +153,7 @@ export function CheckoutForm() {
                 <label className="text-sm font-medium mb-1 block">Phone Number</label>
                 <Input
                   required
+                  disabled={!!snapData}
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="08123456789"
@@ -132,6 +163,7 @@ export function CheckoutForm() {
                 <label className="text-sm font-medium mb-1 block">Delivery Address</label>
                 <Input
                   required
+                  disabled={!!snapData}
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Nama jalan, Nomor rumah, Kota, Kode Pos"
@@ -149,7 +181,7 @@ export function CheckoutForm() {
           <CardContent className="space-y-6">
             {/* Items List */}
             <div className="space-y-2">
-              {items.map((item) => (
+              {displayItems.map((item) => (
                 <div key={item.id} className="flex justify-between text-sm">
                   <span>
                     {item.name} × {item.quantity}
@@ -225,17 +257,17 @@ export function CheckoutForm() {
             <div className="pt-4 border-t space-y-2 text-sm">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
-                <span>{formatIDR(totalPrice())}</span>
+                <span>{formatIDR(displaySubtotal)}</span>
               </div>
-              {appliedDiscount && (
+              {displayDiscountAmount > 0 && (
                 <div className="flex justify-between text-emerald-700 font-semibold">
-                  <span>Diskon Promo ({appliedDiscount.code})</span>
-                  <span>-{formatIDR(discountAmount())}</span>
+                  <span>Diskon Promo ({displayDiscountCode})</span>
+                  <span>-{formatIDR(displayDiscountAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-lg pt-2 text-amber-900 border-t">
                 <span>Total Amount</span>
-                <span>{formatIDR(finalPrice())}</span>
+                <span>{formatIDR(displayFinalTotal)}</span>
               </div>
             </div>
           </CardContent>
