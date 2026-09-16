@@ -52,24 +52,32 @@ export function AIChatbot() {
         }),
       });
 
-      const data = await response.json().catch(() => ({ text: 'Error parsing server response.' }));
+      if (!response.ok) {
+        throw new Error('Layanan AI sedang tidak dapat diakses.');
+      }
+
+      const data = await response.json().catch(() => ({
+        text: 'Maaf, saat ini layanan AI Assistant sedang bermasalah atau tidak aktif. Silakan hubungi customer service kami atau coba beberapa saat lagi.',
+      }));
 
       const assistantMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.text || 'Halo! Ada yang bisa saya bantu di Velours Patisserie?',
+        content:
+          data.text ||
+          'Maaf, saat ini layanan AI Assistant sedang bermasalah atau tidak aktif. Silakan hubungi customer service kami atau coba beberapa saat lagi.',
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (error: unknown) {
       console.error('Chat Error:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Kesalahan jaringan';
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `Maaf, terjadi kesalahan: ${errorMsg}. Silakan coba lagi.`,
+          content:
+            'Maaf, saat ini layanan AI Assistant sedang bermasalah atau tidak aktif. Silakan hubungi customer service kami atau coba beberapa saat lagi.',
         },
       ]);
     } finally {

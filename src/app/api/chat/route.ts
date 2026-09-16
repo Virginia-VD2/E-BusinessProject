@@ -61,6 +61,13 @@ Formatting & Style Rules (CRITICAL):
 - Format all prices in Indonesian Rupiah (e.g. Rp 38.000).
 - Answer customer inquiries naturally, politely, and warmly in Indonesian (or English if the user speaks English).`;
 
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
+    if (!apiKey) {
+      return Response.json({
+        text: 'Maaf, saat ini layanan AI Assistant sedang tidak aktif atau bermasalah. Silakan hubungi customer service kami atau coba lagi nanti.',
+      });
+    }
+
     const { text } = await generateText({
       model: google('gemini-3.6-flash'),
       system: systemPrompt,
@@ -102,7 +109,7 @@ Formatting & Style Rules (CRITICAL):
     console.error('API Chat Error:', error?.message || error);
 
     return Response.json({
-      text: `Maaf, terjadi masalah pada koneksi AI: ${error?.message || 'Gagal terhubung ke Gemini'}. Silakan coba lagi.`,
+      text: 'Maaf, saat ini layanan AI Assistant sedang bermasalah atau tidak aktif. Silakan hubungi customer service kami atau coba beberapa saat lagi.',
     });
   }
 }
