@@ -152,18 +152,20 @@ export async function createCheckoutSessionAction(data: {
     });
 
     // 5. Send Order Confirmation Email asynchronously to user's email
-    sendOrderConfirmationEmail({
-      userEmail: validEmail,
-      userName: data.customer.name.trim() || 'Pelanggan Setia',
-      orderNumber: order.orderNumber,
-      items: data.items,
-      totalAmount: finalTotalAmount,
-      discountAmount,
-      discountCode: appliedCode,
-      shippingAddress: data.customer.address,
-    }).catch((err) => {
+    try {
+      await sendOrderConfirmationEmail({
+        userEmail: validEmail,
+        userName: data.customer.name.trim() || 'Pelanggan Setia',
+        orderNumber: order.orderNumber,
+        items: data.items,
+        totalAmount: finalTotalAmount,
+        discountAmount,
+        discountCode: appliedCode,
+        shippingAddress: data.customer.address,
+      });
+    } catch (err) {
       console.error('Failed to dispatch order confirmation email:', err);
-    });
+    }
 
     return { success: true, snapToken: transaction.token, orderNumber: order.orderNumber };
   } catch (error: unknown) {

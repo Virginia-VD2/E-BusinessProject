@@ -43,10 +43,12 @@ export async function registerUserAction(formData: FormData) {
       },
     });
 
-    // Send Welcome Email asynchronously
-    sendRegistrationWelcomeEmail(newUser.email, newUser.name).catch((err) => {
+    // Send Welcome Email
+    try {
+      await sendRegistrationWelcomeEmail(newUser.email, newUser.name);
+    } catch (err) {
       console.error('Failed to dispatch registration welcome email:', err);
-    });
+    }
 
     return { success: true };
   } catch (error) {
