@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { prisma } from '@/lib/prisma';
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
@@ -100,7 +101,7 @@ export async function sendRegistrationWelcomeEmail(userEmail: string, userName: 
 }
 
 /**
- * Send Order Confirmation Email on New Order Checkout
+ * Send Order Confirmation Email on New Order Checkout / Payment Settlement
  */
 export async function sendOrderConfirmationEmail(orderData: {
   userEmail: string;
@@ -111,6 +112,7 @@ export async function sendOrderConfirmationEmail(orderData: {
   discountAmount?: number;
   discountCode?: string;
   shippingAddress: string;
+  isPaid?: boolean;
 }) {
   const transporter = createTransporter();
 
@@ -127,6 +129,10 @@ export async function sendOrderConfirmationEmail(orderData: {
     .join('');
 
   const subtotal = orderData.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+  const statusTitle = orderData.isPaid ? 'Pembayaran Lunas & Pesanan Diproses' : 'Konfirmasi Pesanan Baru';
+  const statusMessage = orderData.isPaid
+    ? `Hore, ${orderData.userName}! Pembayaran Anda telah kami terima (LUNAS). Pesanan Anda sedang dipanggang & dikemas oleh tim bakery kami!`
+    : `Terima kasih atas pesanan Anda, ${orderData.userName}! Pesanan Anda telah berhasil diterima dan sedang diproses oleh tim bakery kami.`;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -140,6 +146,7 @@ export async function sendOrderConfirmationEmail(orderData: {
           .header h1 { font-family: Georgia, serif; margin: 0; font-size: 26px; }
           .content { padding: 30px 25px; line-height: 1.6; }
           .order-number { background-color: #fef3c7; color: #78350f; font-family: monospace; font-weight: bold; font-size: 16px; padding: 8px 16px; border-radius: 8px; display: inline-block; margin-bottom: 15px; }
+          .status-badge { display: inline-block; background-color: ${orderData.isPaid ? '#d1fae5' : '#fef3c7'}; color: ${orderData.isPaid ? '#065f46' : '#78350f'}; font-weight: bold; font-size: 12px; padding: 4px 12px; border-radius: 20px; margin-bottom: 10px; }
           table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
           th { background-color: #faf5eb; color: #78350f; padding: 10px; text-align: left; border-bottom: 2px solid #f3e8d6; }
           .totals { font-size: 14px; line-height: 1.8; }
@@ -151,11 +158,12 @@ export async function sendOrderConfirmationEmail(orderData: {
         <div class="container">
           <div class="header">
             <h1>Velours Patisserie</h1>
-            <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Konfirmasi Pesanan Baru</p>
+            <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">${statusTitle}</p>
           </div>
           <div class="content">
-            <h2 style="font-family: Georgia, serif; color: #78350f; margin-top: 0;">Terima Kasih atas Pesanan Anda, ${orderData.userName}!</h2>
-            <p>Pesanan Anda telah berhasil diterima dan sedang diproses oleh tim bakery kami.</p>
+            <span class="status-badge">${orderData.isPaid ? 'STATUS: LUNAS (PAID)' : 'STATUS: PENDING PAYMENT'}</span>
+            <h2 style="font-family: Georgia, serif; color: #78350f; margin-top: 0;">${statusTitle}</h2>
+            <p>${statusMessage}</p>
 
             <div style="text-align: center; margin: 15px 0;">
               <span class="order-number">Nomor Pesanan: ${orderData.orderNumber}</span>
@@ -210,8 +218,12 @@ export async function sendOrderConfirmationEmail(orderData: {
     </html>
   `;
 
+  const subjectText = orderData.isPaid
+    ? `✅ Pembayaran Lunas! Pesanan ${orderData.orderNumber} - Velours Patisserie`
+    : `🍰 Konfirmasi Pesanan ${orderData.orderNumber} - Velours Patisserie`;
+
   if (!transporter) {
-    console.log(`[EMAIL SIMULATION] Order confirmation email triggered for: ${orderData.userEmail} (${orderData.orderNumber})`);
+    console.log(`[EMAIL SIMULATION] Order email triggered for: ${orderData.userEmail} (${orderData.orderNumber})`);
     return { success: true, simulated: true };
   }
 
@@ -219,13 +231,75 @@ export async function sendOrderConfirmationEmail(orderData: {
     const info = await transporter.sendMail({
       from: SMTP_FROM,
       to: orderData.userEmail,
-      subject: `🍰 Konfirmasi Pesanan ${orderData.orderNumber} - Velours Patisserie`,
+      subject: subjectText,
       html: htmlContent,
     });
-    console.log(`[EMAIL SUCCESS] Order confirmation email sent to ${orderData.userEmail} (${info.messageId})`);
+    console.log(`[EMAIL SUCCESS] Order email sent to ${orderData.userEmail} (${info.messageId})`);
     return { success: true };
   } catch (error) {
-    console.error(`[EMAIL ERROR] Failed to send order confirmation email to ${orderData.userEmail}:`, error);
+    console.error(`[EMAIL ERROR] Failed to send order email to ${orderData.userEmail}:`, error);
     return { success: false, error };
+  }
+}
+
+/**
+ * Send Payment Success Email when an Order is Settled / Paid
+ */
+export async function sendOrderPaidSuccessEmail(orderId: string) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: { include: { product: true } }, user: true },
+    });
+
+    if (!order) return;
+
+    let customerEmail = order.user?.email || '';
+    const customerName = order.user?.name || 'Pelanggan Setia';
+    let shippingAddr = 'Alamat Pengiriman';
+
+    try {
+      if (order.shippingAddress) {
+        shippingAddr = JSON.parse(order.shippingAddress);
+      }
+    } catch {
+      shippingAddr = order.shippingAddress || 'Alamat Pengiriman';
+    }
+
+    if (!customerEmail) {
+      // Look up in activity logs for guest checkout email if needed
+      const log = await prisma.activityLog.findFirst({
+        where: { entity: 'Order', entityId: order.id, action: 'DISCOUNT_APPLIED' },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (log?.details) {
+        try {
+          const parsed = JSON.parse(log.details);
+          if (parsed.email) customerEmail = parsed.email;
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (!customerEmail) {
+      customerEmail = process.env.SMTP_USER || 'dungusvirginia2@gmail.com';
+    }
+
+    await sendOrderConfirmationEmail({
+      userEmail: customerEmail,
+      userName: customerName,
+      orderNumber: order.orderNumber,
+      items: order.items.map((i) => ({
+        name: i.product.name,
+        price: i.price,
+        quantity: i.quantity,
+      })),
+      totalAmount: order.totalAmount,
+      shippingAddress: typeof shippingAddr === 'string' ? shippingAddr : JSON.stringify(shippingAddr),
+      isPaid: true,
+    });
+  } catch (err) {
+    console.error('Failed to dispatch order paid success email:', err);
   }
 }

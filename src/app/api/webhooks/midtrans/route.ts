@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
+import { sendOrderPaidSuccessEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -95,6 +96,15 @@ export async function POST(req: NextRequest) {
         },
       });
     });
+
+    // Send Payment Success Email if settled
+    if (paymentStatus === PaymentStatus.SETTLEMENT) {
+      try {
+        await sendOrderPaidSuccessEmail(order.id);
+      } catch (e) {
+        console.error('Failed to send paid success email in webhook:', e);
+      }
+    }
 
     return NextResponse.json({ status: 'success' }, { status: 200 });
   } catch (err: unknown) {

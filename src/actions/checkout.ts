@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { snap, coreApi } from '@/lib/midtrans';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { auth } from '@/auth';
-import { sendOrderConfirmationEmail } from '@/lib/email';
+import { sendOrderConfirmationEmail, sendOrderPaidSuccessEmail } from '@/lib/email';
 
 const SERVER_DISCOUNTS: Record<
   string,
@@ -101,6 +101,7 @@ export async function createCheckoutSessionAction(data: {
               subtotal,
               discountAmount,
               finalTotalAmount,
+              email: validEmail,
             }),
           },
         });
@@ -210,6 +211,13 @@ export async function simulateSandboxPaymentAction(orderNumber: string) {
       });
     });
 
+    // Dispatch Paid Success Email
+    try {
+      await sendOrderPaidSuccessEmail(order.id);
+    } catch (err) {
+      console.error('Failed to dispatch paid success email on sandbox simulation:', err);
+    }
+
     return { success: true };
   } catch (error: unknown) {
     console.error('Sandbox Payment Simulation Error:', error);
@@ -274,6 +282,13 @@ export async function syncOrderStatusAction(orderNumber: string) {
             },
           });
         });
+
+        // Dispatch Paid Success Email
+        try {
+          await sendOrderPaidSuccessEmail(order.id);
+        } catch (err) {
+          console.error('Failed to dispatch paid success email on status sync:', err);
+        }
 
         return { success: true, paymentStatus: 'SETTLEMENT', updated: true };
       }
