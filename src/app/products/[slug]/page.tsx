@@ -9,7 +9,6 @@ import { ChevronLeft } from 'lucide-react';
 export const revalidate = 60;
 
 export default async function ProductDetailPage({ params }: { params: { slug: string } }) {
-  // Decode slug in case it has spaces or special characters
   const decodedSlug = decodeURIComponent(params.slug);
 
   const product = await prisma.product.findFirst({
@@ -30,17 +29,17 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 
   return (
-    <div className="min-h-screen bg-amber-50/20 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <Header />
 
       <main className="container mx-auto px-4 py-12 max-w-5xl flex-1">
-        <Link href="/" className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-amber-900 mb-8">
-          <ChevronLeft className="h-4 w-4" /> Back to Storefront
+        <Link href="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-red-700 mb-8">
+          <ChevronLeft className="h-4 w-4" /> Kembali ke Halaman Utama
         </Link>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-white rounded-xl border border-amber-100 p-6 sm:p-8 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-white rounded-2xl border border-red-100 p-6 sm:p-8 shadow-sm">
           {/* Image */}
-          <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+          <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100">
             <Image
               src={product.images[0] || '/placeholder.png'}
               alt={product.name}
@@ -54,14 +53,14 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
           {/* Details */}
           <div className="flex flex-col justify-between space-y-6">
             <div className="space-y-3">
-              <span className="text-xs uppercase font-bold tracking-wider text-amber-800 bg-amber-100 px-2.5 py-1 rounded-full">
+              <span className="text-xs uppercase font-bold tracking-wider text-red-700 bg-red-100 px-2.5 py-1 rounded-full">
                 {product.category}
               </span>
-              <h1 className="font-serif text-3xl sm:text-4xl font-bold text-amber-950">
+              <h1 className="font-extrabold text-3xl sm:text-4xl text-slate-900">
                 {product.name}
               </h1>
-              <p className="text-2xl font-bold text-primary">
-                {formatIDR(product.price)}
+              <p className="text-3xl font-black text-red-700">
+                {formatIDR(product.pricePerKg)} <span className="text-sm font-normal text-slate-500">/ kg</span>
               </p>
               <div className="pt-4 border-t">
                 <p className="text-sm text-slate-600 leading-relaxed">
@@ -72,11 +71,11 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
 
             <div className="space-y-4 pt-6 border-t">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Availability:</span>
-                {product.stock > 0 ? (
-                  <span className="font-semibold text-green-600">In Stock ({product.stock} available)</span>
+                <span className="text-slate-500 font-semibold">Ketersediaan Stok:</span>
+                {product.stockKg > 0 ? (
+                  <span className="font-bold text-emerald-600">Stok Ready ({product.stockKg} kg)</span>
                 ) : (
-                  <span className="font-semibold text-red-600">Out of Stock</span>
+                  <span className="font-bold text-red-600">Stok Habis</span>
                 )}
               </div>
 

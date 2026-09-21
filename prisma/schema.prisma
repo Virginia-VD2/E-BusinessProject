@@ -7,12 +7,26 @@ generator client {
 }
 
 enum Role {
-  USER
+  CUSTOMER
+  SELLER
   ADMIN
+}
+
+enum CustomerType {
+  PERSONAL
+  BUSINESS
+}
+
+enum OrderType {
+  REGULAR
+  PRE_ORDER
+  SUBSCRIPTION
 }
 
 enum OrderStatus {
   PENDING
+  CONFIRMED
+  WEIGHT_VERIFIED
   PROCESSING
   SHIPPED
   DELIVERED
@@ -30,58 +44,133 @@ enum PaymentStatus {
   REFUND
 }
 
+enum CutType {
+  UTUH
+  POTONG_4
+  POTONG_8
+  POTONG_10
+  DADA_ONLY
+  PAHA_ONLY
+  GEPREK
+  JEROAN_AMPELA
+}
+
+enum SentimentLabel {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum UrgencyLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum QuotationStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id           String        @id @default(cuid())
-  name         String
-  email        String        @unique
-  passwordHash String
-  role         Role          @default(USER)
-  phone        String?
-  address      String?
-  orders       Order[]
-  activityLogs ActivityLog[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                 String              @id @default(cuid())
+  name               String
+  email              String              @unique
+  passwordHash       String
+  role               Role                @default(CUSTOMER)
+  customerType       CustomerType        @default(PERSONAL)
+  loyaltyPoints      Int                 @default(0)
+  familyAccountId    String?
+  phone              String?
+  address            String?
+  businessName       String?
+  preferences        CustomerPreference?
+  orders             Order[]
+  quotations         Quotation[]
+  reviews            Review[]
+  complaints         Complaint[]
+  subscriptions      Subscription[]
+  activityLogs       ActivityLog[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@index([email])
+  @@index([role])
+  @@index([customerType])
+}
+
+model CustomerPreference {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favoriteCut         CutType  @default(POTONG_8)
+  averageWeightKg     Float    @default(2.0)
+  defaultDeliverySlot String   @default("06:00 - 08:00 WITA")
+  aiNotes             String?  @db.Text
+  updatedAt           DateTime @updatedAt
 }
 
 model Product {
-  id          String      @id @default(cuid())
-  name        String
-  slug        String      @unique
-  description String      @db.Text
-  price       Int         
-  stock       Int         @default(0)
-  images      String[]    
-  category    String
-  isActive    Boolean     @default(true)
-  orderItems  OrderItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id             String       @id @default(cuid())
+  name           String
+  slug           String       @unique
+  description    String       @db.Text
+  pricePerKg     Int
+  stockKg        Float        @default(0)
+  isActualWeight Boolean      @default(true)
+  images         String[]
+  category       String       @default("AYAM_SEGAR")
+  isActive       Boolean      @default(true)
+  cutOptions     CutOption[]
+  orderItems     OrderItem[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([slug])
   @@index([category])
   @@index([isActive])
 }
 
+model CutOption {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cutType     CutType
+  extraFee    Int      @default(0)
+  description String?
+
+  @@index([productId])
+}
+
 model Order {
-  id               String        @id @default(cuid())
-  orderNumber      String        @unique 
-  userId           String?       
-  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  status           OrderStatus   @default(PENDING)
-  paymentStatus    PaymentStatus @default(UNPAID)
-  totalAmount      Int
-  shippingAddress  String // Store as JSON string or plain text for now        
-  snapToken        String?
-  snapRedirectUrl  String?
-  paymentType      String?       
-  midtransResponse String? // JSON string
-  paidAt           DateTime?
-  items            OrderItem[]
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                 String          @id @default(cuid())
+  orderNumber        String          @unique
+  userId             String?
+  user               User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  orderType          OrderType       @default(REGULAR)
+  status             OrderStatus     @default(PENDING)
+  paymentStatus      PaymentStatus   @default(UNPAID)
+  requestedWeightKg  Float
+  actualWeightKg     Float?
+  estimatedAmount    Int
+  finalAmount        Int
+  shippingDistanceKm Float           @default(1.0)
+  deliveryFee        Int             @default(5000)
+  deliverySlot       String          @default("Pagi (06:00 - 08:00 WITA)")
+  shippingAddress    String
+  snapToken          String?
+  snapRedirectUrl    String?
+  paymentType        String?
+  paidAt             DateTime?
+  items              OrderItem[]
+  digitalReceipt     DigitalReceipt?
+  reviews            Review[]
+  complaints         Complaint[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -90,27 +179,109 @@ model Order {
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantity  Int
-  price     Int      
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  cutType      CutType  @default(UTUH)
+  requestedKg  Float
+  actualKg     Float?
+  pricePerKg   Int
+  subtotal     Int
+  createdAt    DateTime @default(now())
 
   @@index([orderId])
   @@index([productId])
+}
+
+model DigitalReceipt {
+  id                String   @id @default(cuid())
+  orderId           String   @unique
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  qrCodeUrl         String?
+  weightDifference  Float    @default(0)
+  priceAdjusted     Int      @default(0)
+  verifiedBySeller  Boolean  @default(false)
+  issuedAt          DateTime @default(now())
+}
+
+model Subscription {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weeklyKg       Float
+  cutPreference  CutType   @default(POTONG_10)
+  deliveryDays   String    // JSON string e.g. ["SENIN", "KAMIS"]
+  preferredTime  String    @default("07:00 WITA")
+  isActive       Boolean   @default(true)
+  nextDeliveryAt DateTime
+  createdAt      DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Quotation {
+  id               String          @id @default(cuid())
+  quotationNumber  String          @unique
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestedKg      Float
+  quotedPricePerKg Int
+  estimatedTotal   Int
+  status           QuotationStatus @default(DRAFT)
+  aiRecommendation String?         @db.Text
+  notes            String?         @db.Text
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Review {
+  id             String         @id @default(cuid())
+  orderId        String
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating         Int
+  comment        String         @db.Text
+  sentimentScore Float          @default(0)
+  sentimentLabel SentimentLabel @default(NEUTRAL)
+  aiSummary      String?
+  createdAt      DateTime       @default(now())
+
+  @@index([orderId])
+  @@index([userId])
+}
+
+model Complaint {
+  id           String       @id @default(cuid())
+  orderId      String
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     String
+  description  String       @db.Text
+  aiAnalysis   String?      @db.Text
+  urgencyLevel UrgencyLevel @default(MEDIUM)
+  isResolved   Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([urgencyLevel])
 }
 
 model ActivityLog {
   id        String   @id @default(cuid())
   userId    String?
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action    String   
-  entity    String   
+  action    String
+  entity    String
   entityId  String?
-  details   String? // JSON string
+  details   String?
   ipAddress String?
   userAgent String?
   createdAt DateTime @default(now())

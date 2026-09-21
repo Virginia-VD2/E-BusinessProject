@@ -39,7 +39,7 @@ export async function registerUserAction(formData: FormData) {
         name,
         email,
         passwordHash,
-        role: Role.USER,
+        role: Role.CUSTOMER,
       },
     });
 

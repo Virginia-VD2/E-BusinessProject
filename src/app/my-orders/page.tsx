@@ -103,7 +103,7 @@ export default async function MyOrdersPage() {
                         {order.items.length > 0 ? order.items[0].product.name : 'Unknown Product'}
                         {order.items.length > 1 && <span className="text-muted-foreground font-normal"> and {order.items.length - 1} other items</span>}
                       </p>
-                      <p className="text-sm font-bold text-primary">{formatIDR(order.totalAmount)}</p>
+                      <p className="text-sm font-bold text-primary">{formatIDR(order.finalAmount)}</p>
                     </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </CardContent>

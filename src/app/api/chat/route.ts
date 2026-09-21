@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     rawMessages = body.messages || [];
 
     // Fetch live product catalog to inject into Gemini context
-    let productCatalogText = 'Catalog currently unavailable.';
+    let productCatalogText = 'Katalog produk saat ini belum tersedia.';
     try {
       const activeProducts = await prisma.product.findMany({
         where: { isActive: true },
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       productCatalogText = activeProducts
         .map(
           (p) =>
-            `• ${p.name} | Category: ${p.category} | Price: Rp ${p.price.toLocaleString('id-ID')} | Stock: ${p.stock} | Description: ${p.description}`
+            `• ${p.name} | Kategori: ${p.category} | Harga: Rp ${p.pricePerKg.toLocaleString('id-ID')}/kg | Stok: ${p.stockKg} kg | Deskripsi: ${p.description}`
         )
         .join('\n');
     } catch (e) {
@@ -49,22 +49,23 @@ export async function POST(req: Request) {
       };
     });
 
-    const systemPrompt = `You are the friendly, expert customer assistant for Velours Patisserie, a premium French bakery & e-commerce shop. 
+    const systemPrompt = `Kamu adalah AYAMAJA AI, asisten belanja cerdas ayam segar di Minahasa Utara (Airmadidi, Kalawat, Kauditan, Likupang).
+Positioning utama: "Kamu bilang butuh apa, AYAMAJA yang mengurus sisanya."
 
-Here is our live product catalog and store inventory:
+Berikut katalog live & stok ayam segar saat ini:
 ${productCatalogText}
 
-Formatting & Style Rules (CRITICAL):
-- DO NOT use markdown symbols such as hashtags (###), asterisks (* or **), underscores (_), or horizontal rules (---).
-- Write in clean, elegant PLAIN TEXT only.
-- Use simple bullet points (•) for listing items.
-- Format all prices in Indonesian Rupiah (e.g. Rp 38.000).
-- Answer customer inquiries naturally, politely, and warmly in Indonesian (or English if the user speaks English).`;
+Aturan Penulisan (SANGAT PENTING):
+- JANGAN gunakan tanda markdown seperti pagar (###), asterisk (* atau **), underscore (_), atau garis horizontal (---).
+- Tulis dalam TEKS POLOS yang rapi & ramah.
+- Gunakan poin peluru sederhana (•) untuk daftar item.
+- Format harga dalam Rupiah (contoh: Rp 36.000/kg).
+- Jawab pertanyaan pembeli secara alami dan solutif dalam bahasa Indonesia sehari-hari.`;
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
     if (!apiKey) {
       return Response.json({
-        text: 'Maaf, saat ini layanan AI Assistant sedang tidak aktif atau bermasalah. Silakan hubungi customer service kami atau coba lagi nanti.',
+        text: 'Maaf, saat ini layanan AYAMAJA AI Assistant sedang tidak aktif. Silakan gunakan UI pemilihan langsung di halaman depan.',
       });
     }
 
@@ -75,23 +76,22 @@ Formatting & Style Rules (CRITICAL):
       maxSteps: 5,
       tools: {
         checkOrderStatus: tool({
-          description: 'Check the status of an order using the order number',
+          description: 'Cek status pesanan ayam menggunakan nomor pesanan',
           parameters: z.object({
-            orderNumber: z.string().describe('Order number (e.g. ORD-20260913-XXXX)'),
+            orderNumber: z.string().describe('Nomor Pesanan (contoh: AYM-89210)'),
           }),
           execute: async ({ orderNumber }: { orderNumber: string }) => {
             const order = await prisma.order.findUnique({
               where: { orderNumber },
-              select: { orderNumber: true, status: true, paymentStatus: true, totalAmount: true },
+              select: { orderNumber: true, status: true, paymentStatus: true, finalAmount: true },
             });
-            if (!order) return { error: 'Order not found. Please check the order number.' };
+            if (!order) return { error: 'Pesanan tidak ditemukan.' };
             return order;
           },
         } as any),
       },
     } as any);
 
-    // Clean up any residual markdown symbols (#, *, __, ---)
     let cleanText = (text || '')
       .replace(/#{1,6}\s?/g, '')
       .replace(/\*{1,2}/g, '')
@@ -101,7 +101,7 @@ Formatting & Style Rules (CRITICAL):
       .trim();
 
     if (!cleanText) {
-      cleanText = 'Tentu! Ada yang bisa saya bantu lagi tentang produk Velours Patisserie?';
+      cleanText = 'Ada yang bisa AYAMAJA bantu lagi untuk pemesanan ayam segar Anda?';
     }
 
     return Response.json({ text: cleanText });
@@ -109,7 +109,7 @@ Formatting & Style Rules (CRITICAL):
     console.error('API Chat Error:', error?.message || error);
 
     return Response.json({
-      text: 'Maaf, saat ini layanan AI Assistant sedang bermasalah atau tidak aktif. Silakan hubungi customer service kami atau coba beberapa saat lagi.',
+      text: 'Maaf, saat ini layanan AYAMAJA AI sedang bermasalah. Silakan gunakan pemesanan via UI.',
     });
   }
 }

@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { cn } from "@/lib/utils";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { cn } from '@/lib/utils';
+import { Providers } from '@/components/providers/Providers';
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: "Velours Patisserie | Artisanal French Bakery",
-  description: "Premium e-commerce platform for ordering artisanal breads and pastries.",
+  title: 'AYAMAJA | Asisten Belanja Ayam Segar Minahasa Utara',
+  description: 'Kamu bilang butuh apa, AYAMAJA yang mengurus sisanya. Platform Asisten Belanja Cerdas Ayam Segar di Minahasa Utara.',
 };
 
 export default function RootLayout({
@@ -16,9 +17,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", inter.variable)}>
+    <html lang="id" className={cn('font-sans', inter.variable)}>
       <body className="antialiased font-sans">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -82,17 +82,17 @@ export default async function OrderStatusPage({ params }: { params: { orderNumbe
                   <div key={item.id} className="pt-3 flex justify-between">
                     <div>
                       <p className="font-semibold">{item.product.name}</p>
-                      <p className="text-sm text-muted-foreground">{item.quantity} x {formatIDR(item.price)}</p>
+                      <p className="text-sm text-muted-foreground">{item.requestedKg} kg x {formatIDR(item.pricePerKg)}/kg</p>
                     </div>
-                    <p className="font-semibold">{formatIDR(item.price * item.quantity)}</p>
+                    <p className="font-semibold">{formatIDR(item.subtotal)}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="border-t pt-4 flex justify-between items-center text-lg font-bold">
-              <span>Total Amount</span>
-              <span className="text-primary">{formatIDR(order.totalAmount)}</span>
+              <span>Total Pas / Estimasi</span>
+              <span className="text-primary">{formatIDR(order.finalAmount)}</span>
             </div>
 
             {['UNPAID', 'PENDING'].includes(order.paymentStatus) && (

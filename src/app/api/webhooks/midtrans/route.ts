@@ -72,7 +72,6 @@ export async function POST(req: NextRequest) {
           status: orderStatus,
           paymentStatus: paymentStatus,
           paymentType: payment_type,
-          midtransResponse: JSON.stringify(body),
           paidAt: paymentStatus === PaymentStatus.SETTLEMENT ? new Date() : null,
         },
       });
@@ -81,7 +80,7 @@ export async function POST(req: NextRequest) {
         for (const item of order.items) {
           await tx.product.update({
             where: { id: item.productId },
-            data: { stock: { increment: item.quantity } },
+            data: { stockKg: { increment: item.requestedKg } },
           });
         }
       }

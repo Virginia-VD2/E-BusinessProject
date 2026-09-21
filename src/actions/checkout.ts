@@ -56,33 +56,38 @@ export async function createCheckoutSessionAction(data: {
       for (const item of data.items) {
         const product = await tx.product.findUnique({
           where: { id: item.id },
-          select: { stock: true, name: true },
+          select: { stockKg: true, name: true },
         });
 
-        if (!product || product.stock < item.quantity) {
-          throw new Error(`Stock tidak cukup untuk ${product?.name ?? item.id}`);
+        if (!product || product.stockKg < item.quantity) {
+          throw new Error(`Stok tidak cukup untuk ${product?.name ?? item.id}`);
         }
 
         await tx.product.update({
           where: { id: item.id },
-          data: { stock: { decrement: item.quantity } },
+          data: { stockKg: { decrement: item.quantity } },
         });
       }
 
       // 2. Create Order
+      const totalKg = data.items.reduce((acc, item) => acc + item.quantity, 0);
+
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
           userId: currentUserId,
           status: OrderStatus.PENDING,
-          paymentStatus: PaymentStatus.PENDING,
-          totalAmount: finalTotalAmount,
-          shippingAddress: JSON.stringify(data.customer.address),
+          paymentStatus: PaymentStatus.UNPAID,
+          requestedWeightKg: totalKg,
+          estimatedAmount: finalTotalAmount,
+          finalAmount: finalTotalAmount,
+          shippingAddress: typeof data.customer.address === 'string' ? data.customer.address : JSON.stringify(data.customer.address),
           items: {
             create: data.items.map((item) => ({
               productId: item.id,
-              quantity: item.quantity,
-              price: item.price,
+              requestedKg: item.quantity,
+              pricePerKg: item.price,
+              subtotal: Math.round(item.price * item.quantity),
             })),
           },
         },
@@ -131,7 +136,7 @@ export async function createCheckoutSessionAction(data: {
     const parameter = {
       transaction_details: {
         order_id: order.orderNumber,
-        gross_amount: order.totalAmount,
+        gross_amount: order.finalAmount,
       },
       item_details: itemDetails,
       customer_details: {
@@ -206,7 +211,7 @@ export async function simulateSandboxPaymentAction(orderNumber: string) {
           action: 'PAYMENT_SETTLEMENT_SANDBOX_SIMULATED',
           entity: 'Order',
           entityId: order.id,
-          details: JSON.stringify({ orderNumber, totalAmount: order.totalAmount, mode: 'sandbox_simulation' }),
+          details: JSON.stringify({ orderNumber, totalAmount: order.finalAmount, mode: 'sandbox_simulation' }),
         },
       });
     });
@@ -268,7 +273,6 @@ export async function syncOrderStatusAction(orderNumber: string) {
               paymentStatus: PaymentStatus.SETTLEMENT,
               paymentType: midtransStatus.payment_type || 'midtrans_synced',
               paidAt: new Date(),
-              midtransResponse: JSON.stringify(midtransStatus),
             },
           });
 

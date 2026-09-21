@@ -292,10 +292,10 @@ export async function sendOrderPaidSuccessEmail(orderId: string) {
       orderNumber: order.orderNumber,
       items: order.items.map((i) => ({
         name: i.product.name,
-        price: i.price,
-        quantity: i.quantity,
+        price: i.pricePerKg,
+        quantity: i.requestedKg,
       })),
-      totalAmount: order.totalAmount,
+      totalAmount: order.finalAmount,
       shippingAddress: typeof shippingAddr === 'string' ? shippingAddr : JSON.stringify(shippingAddr),
       isPaid: true,
     });
