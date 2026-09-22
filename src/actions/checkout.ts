@@ -75,82 +75,78 @@ export async function createCheckoutSessionAction(data: {
   const orderNumber = `ORD-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
   try {
-    const order = await prisma.$transaction(async (tx) => {
-      // 1. Verify stock and decrement
-      for (const item of data.items) {
-        let product = await tx.product.findUnique({
-          where: { id: item.id },
-          select: { id: true, stockKg: true, name: true },
-        });
-
-        if (!product) {
-          product = await tx.product.findFirst({
-            where: {
-              OR: [
-                { name: { contains: item.name.split(' ')[0], mode: 'insensitive' } },
-                { isActive: true },
-              ],
-            },
-            select: { id: true, stockKg: true, name: true },
-          });
-        }
-
-        if (product) {
-          item.id = product.id; // Map to real database product ID
-          if (product.stockKg > 0) {
-            await tx.product.update({
-              where: { id: product.id },
-              data: { stockKg: { decrement: Math.min(product.stockKg, item.quantity) } },
-            });
-          }
-        }
-      }
-
-      // 2. Create Order
-      const totalKg = data.items.reduce((acc, item) => acc + item.quantity, 0);
-
-      const newOrder = await tx.order.create({
-        data: {
-          orderNumber,
-          userId: validUserId,
-          status: OrderStatus.PENDING,
-          paymentStatus: PaymentStatus.UNPAID,
-          requestedWeightKg: totalKg,
-          estimatedAmount: finalTotalAmount,
-          finalAmount: finalTotalAmount,
-          shippingAddress: typeof data.customer.address === 'string' ? data.customer.address : JSON.stringify(data.customer.address),
-          items: {
-            create: data.items.map((item) => ({
-              productId: item.id,
-              requestedKg: item.quantity,
-              pricePerKg: item.price,
-              subtotal: Math.round(item.price * item.quantity),
-            })),
-          },
-        },
+    // 1. Verify stock and decrement directly (without pool-blocking interactive transaction)
+    for (const item of data.items) {
+      let product = await prisma.product.findUnique({
+        where: { id: item.id },
+        select: { id: true, stockKg: true, name: true },
       });
 
-      // Log discount usage if applied
-      if (discountAmount > 0) {
-        await tx.activityLog.create({
-          data: {
-            userId: validUserId,
-            action: 'DISCOUNT_APPLIED',
-            entity: 'Order',
-            entityId: newOrder.id,
-            details: JSON.stringify({
-              code: appliedCode,
-              subtotal,
-              discountAmount,
-              finalTotalAmount,
-              email: validEmail,
-            }),
+      if (!product) {
+        product = await prisma.product.findFirst({
+          where: {
+            OR: [
+              { name: { contains: item.name.split(' ')[0], mode: 'insensitive' } },
+              { isActive: true },
+            ],
           },
+          select: { id: true, stockKg: true, name: true },
         });
       }
 
-      return newOrder;
+      if (product) {
+        item.id = product.id; // Map to real database product ID
+        if (product.stockKg > 0) {
+          await prisma.product.update({
+            where: { id: product.id },
+            data: { stockKg: { decrement: Math.min(product.stockKg, item.quantity) } },
+          }).catch(() => {});
+        }
+      }
+    }
+
+    // 2. Create Order directly
+    const totalKg = data.items.reduce((acc, item) => acc + item.quantity, 0);
+
+    const order = await prisma.order.create({
+      data: {
+        orderNumber,
+        userId: validUserId,
+        status: OrderStatus.PENDING,
+        paymentStatus: PaymentStatus.UNPAID,
+        requestedWeightKg: totalKg,
+        estimatedAmount: finalTotalAmount,
+        finalAmount: finalTotalAmount,
+        shippingAddress: typeof data.customer.address === 'string' ? data.customer.address : JSON.stringify(data.customer.address),
+        items: {
+          create: data.items.map((item) => ({
+            productId: item.id,
+            requestedKg: item.quantity,
+            pricePerKg: item.price,
+            subtotal: Math.round(item.price * item.quantity),
+          })),
+        },
+      },
     });
+
+    // Log discount usage if applied
+    if (discountAmount > 0) {
+      await prisma.activityLog.create({
+        data: {
+          userId: validUserId,
+          action: 'DISCOUNT_APPLIED',
+          entity: 'Order',
+          entityId: order.id,
+          details: JSON.stringify({
+            code: appliedCode,
+            subtotal,
+            discountAmount,
+            finalTotalAmount,
+            email: validEmail,
+          }),
+        },
+      }).catch(() => {});
+    }
 
     // 3. Generate Midtrans Snap Token
     /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -166,7 +162,7 @@ export async function createCheckoutSessionAction(data: {
         id: 'DISCOUNT',
         price: -discountAmount,
         quantity: 1,
-        name: `Diskon Easter Egg (${appliedCode})`.substring(0, 50),
+        name: `Diskon AYAMAJA (${appliedCode})`.substring(0, 50),
       });
     }
 
@@ -231,27 +227,25 @@ export async function simulateSandboxPaymentAction(orderNumber: string) {
       return { success: true, message: 'Order already paid' };
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: order.id },
-        data: {
-          status: OrderStatus.PROCESSING,
-          paymentStatus: PaymentStatus.SETTLEMENT,
-          paymentType: 'sandbox_simulation',
-          paidAt: new Date(),
-        },
-      });
-
-      await tx.activityLog.create({
-        data: {
-          userId: order.userId,
-          action: 'PAYMENT_SETTLEMENT_SANDBOX_SIMULATED',
-          entity: 'Order',
-          entityId: order.id,
-          details: JSON.stringify({ orderNumber, totalAmount: order.finalAmount, mode: 'sandbox_simulation' }),
-        },
-      });
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        status: OrderStatus.PROCESSING,
+        paymentStatus: PaymentStatus.SETTLEMENT,
+        paymentType: 'sandbox_simulation',
+        paidAt: new Date(),
+      },
     });
+
+    await prisma.activityLog.create({
+      data: {
+        userId: order.userId,
+        action: 'PAYMENT_SETTLEMENT_SANDBOX_SIMULATED',
+        entity: 'Order',
+        entityId: order.id,
+        details: JSON.stringify({ orderNumber, totalAmount: order.finalAmount, mode: 'sandbox_simulation' }),
+      },
+    }).catch(() => {});
 
     // Dispatch Paid Success Email
     try {
@@ -302,27 +296,25 @@ export async function syncOrderStatusAction(orderNumber: string) {
       }
 
       if (isSettled) {
-        await prisma.$transaction(async (tx) => {
-          await tx.order.update({
-            where: { id: order.id },
-            data: {
-              status: OrderStatus.PROCESSING,
-              paymentStatus: PaymentStatus.SETTLEMENT,
-              paymentType: midtransStatus.payment_type || 'midtrans_synced',
-              paidAt: new Date(),
-            },
-          });
-
-          await tx.activityLog.create({
-            data: {
-              userId: order.userId,
-              action: 'PAYMENT_SETTLEMENT_SYNCED',
-              entity: 'Order',
-              entityId: order.id,
-              details: JSON.stringify(midtransStatus),
-            },
-          });
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: OrderStatus.PROCESSING,
+            paymentStatus: PaymentStatus.SETTLEMENT,
+            paymentType: midtransStatus.payment_type || 'midtrans_synced',
+            paidAt: new Date(),
+          },
         });
+
+        await prisma.activityLog.create({
+          data: {
+            userId: order.userId,
+            action: 'PAYMENT_SETTLEMENT_SYNCED',
+            entity: 'Order',
+            entityId: order.id,
+            details: JSON.stringify(midtransStatus),
+          },
+        }).catch(() => {});
 
         // Dispatch Paid Success Email
         try {

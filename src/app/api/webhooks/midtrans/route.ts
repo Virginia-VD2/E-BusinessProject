@@ -64,37 +64,35 @@ export async function POST(req: NextRequest) {
       shouldRestoreStock = true;
     }
 
-    // 4. Update Database in a Transaction
-    await prisma.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: order.id },
-        data: {
-          status: orderStatus,
-          paymentStatus: paymentStatus,
-          paymentType: payment_type,
-          paidAt: paymentStatus === PaymentStatus.SETTLEMENT ? new Date() : null,
-        },
-      });
-
-      if (shouldRestoreStock) {
-        for (const item of order.items) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stockKg: { increment: item.requestedKg } },
-          });
-        }
-      }
-
-      await tx.activityLog.create({
-        data: {
-          userId: order.userId,
-          action: `PAYMENT_${transaction_status.toUpperCase()}`,
-          entity: 'Order',
-          entityId: order.id,
-          details: JSON.stringify({ transaction_status, gross_amount, payment_type }),
-        },
-      });
+    // 4. Update Database
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        status: orderStatus,
+        paymentStatus: paymentStatus,
+        paymentType: payment_type,
+        paidAt: paymentStatus === PaymentStatus.SETTLEMENT ? new Date() : null,
+      },
     });
+
+    if (shouldRestoreStock) {
+      for (const item of order.items) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stockKg: { increment: item.requestedKg } },
+        }).catch(() => {});
+      }
+    }
+
+    await prisma.activityLog.create({
+      data: {
+        userId: order.userId,
+        action: `PAYMENT_${transaction_status.toUpperCase()}`,
+        entity: 'Order',
+        entityId: order.id,
+        details: JSON.stringify({ transaction_status, gross_amount, payment_type }),
+      },
+    }).catch(() => {});
 
     // Send Payment Success Email if settled
     if (paymentStatus === PaymentStatus.SETTLEMENT) {
