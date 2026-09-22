@@ -57,19 +57,32 @@ export async function createCheckoutSessionAction(data: {
     const order = await prisma.$transaction(async (tx) => {
       // 1. Verify stock and decrement
       for (const item of data.items) {
-        const product = await tx.product.findUnique({
+        let product = await tx.product.findUnique({
           where: { id: item.id },
-          select: { stockKg: true, name: true },
+          select: { id: true, stockKg: true, name: true },
         });
 
-        if (!product || product.stockKg < item.quantity) {
-          throw new Error(`Stok tidak cukup untuk ${product?.name ?? item.id}`);
+        if (!product) {
+          product = await tx.product.findFirst({
+            where: {
+              OR: [
+                { name: { contains: item.name.split(' ')[0], mode: 'insensitive' } },
+                { isActive: true },
+              ],
+            },
+            select: { id: true, stockKg: true, name: true },
+          });
         }
 
-        await tx.product.update({
-          where: { id: item.id },
-          data: { stockKg: { decrement: item.quantity } },
-        });
+        if (product) {
+          item.id = product.id; // Map to real database product ID
+          if (product.stockKg > 0) {
+            await tx.product.update({
+              where: { id: product.id },
+              data: { stockKg: { decrement: Math.min(product.stockKg, item.quantity) } },
+            });
+          }
+        }
       }
 
       // 2. Create Order

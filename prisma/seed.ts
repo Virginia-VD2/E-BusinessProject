@@ -19,15 +19,16 @@ async function main() {
   await prisma.product.deleteMany().catch(() => {});
   await prisma.user.deleteMany().catch(() => {});
 
-  console.log('🐓 Seeding AYAMAJA Fresh Chicken database...');
+  console.log('🐓 Seeding AYAMAJA Fresh Chicken database with explicit IDs...');
 
   // 1. Create Admin & Seller Users
   const adminPassword = await bcrypt.hash('admin123', 10);
   const sellerPassword = await bcrypt.hash('seller123', 10);
   const userPassword = await bcrypt.hash('user123', 10);
 
-  const admin = await prisma.user.create({
+  await prisma.user.create({
     data: {
+      id: 'usr-admin',
       name: 'AYAMAJA Admin',
       email: 'admin@ayamaja.com',
       passwordHash: adminPassword,
@@ -37,8 +38,9 @@ async function main() {
     },
   });
 
-  const seller = await prisma.user.create({
+  await prisma.user.create({
     data: {
+      id: 'usr-seller',
       name: 'Mitra Seller Kalawat',
       email: 'seller@ayamaja.com',
       passwordHash: sellerPassword,
@@ -51,8 +53,9 @@ async function main() {
   });
 
   // 2. Create Customers
-  const customer1 = await prisma.user.create({
+  await prisma.user.create({
     data: {
+      id: 'usr-customer1',
       name: 'Nathan Tambuku',
       email: 'nathantambuku13@gmail.com',
       passwordHash: userPassword,
@@ -64,8 +67,9 @@ async function main() {
     },
   });
 
-  const customer2 = await prisma.user.create({
+  await prisma.user.create({
     data: {
+      id: 'usr-customer2',
       name: 'Resto Minahasa Jaya',
       email: 'warung.mbakani@gmail.com',
       passwordHash: userPassword,
@@ -78,9 +82,10 @@ async function main() {
     },
   });
 
-  // 3. Create AYAMAJA Products
+  // 3. Create AYAMAJA Products with explicit IDs matching storefront
   const productsData = [
     {
+      id: 'prod-1',
       name: 'Ayam Broiler Segar (Per Kg)',
       slug: 'ayam-broiler-segar',
       description: 'Dipotong fresh setiap jam 04:00 WITA dari peternakan lokal Minahasa Utara. Bebas bahan pengawet.',
@@ -90,6 +95,7 @@ async function main() {
       images: ['https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=600&q=80'],
     },
     {
+      id: 'prod-2',
       name: 'Dada Ayam Fillet Segar',
       slug: 'dada-ayam-fillet',
       description: '100% daging dada ayam bersih tanpa tulang & lemak. Tinggi protein cocok untuk diet & resto.',
@@ -99,6 +105,7 @@ async function main() {
       images: ['https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=600&q=80'],
     },
     {
+      id: 'prod-3',
       name: 'Paha Ayam Segar (Paha Atas & Bawah)',
       slug: 'paha-ayam-segar',
       description: 'Juicy, gurih, dan tekstur empuk pas untuk ayam goreng krispi & bakar woku.',
@@ -108,6 +115,7 @@ async function main() {
       images: ['https://images.unsplash.com/photo-1588168333986-5078d3ae3976?auto=format&fit=crop&w=600&q=80'],
     },
     {
+      id: 'prod-4',
       name: 'Hati & Ampela Ayam Segar (Per Pasang)',
       slug: 'hati-ampela-segar',
       description: 'Pilihan jeroan ayam bersih & segar dipotong subuh.',
@@ -117,6 +125,7 @@ async function main() {
       images: ['https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80'],
     },
     {
+      id: 'prod-5',
       name: 'Ayam Kampung Segar Utuh',
       slug: 'ayam-kampung-segar',
       description: 'Ayam kampung asli Minahasa Utara, daging manis gurih cocok untuk masakan khas Minahasa (Tinutuan / Woku).',
@@ -131,7 +140,7 @@ async function main() {
     await prisma.product.create({ data: p });
   }
 
-  console.log('✅ Database AYAMAJA successfully reset & seeded!');
+  console.log('✅ Database AYAMAJA successfully reset & seeded with explicit IDs (prod-1 to prod-5)!');
   console.log('------------------------------------------------');
   console.log('Kredensial Login Testing AYAMAJA:');
   console.log('1. ADMIN : admin@ayamaja.com / admin123');
