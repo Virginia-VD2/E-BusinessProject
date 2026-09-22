@@ -31,7 +31,28 @@ export async function createCheckoutSessionAction(data: {
   // Clean and validate email for Midtrans API requirements
   const rawEmail = (data.customer.email || '').trim().toLowerCase();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const validEmail = emailRegex.test(rawEmail) ? rawEmail : 'customer@velourspatisserie.web.id';
+  const validEmail = emailRegex.test(rawEmail) ? rawEmail : 'customer@ayamaja.com';
+
+  // Verify userId validity in database to prevent Foreign Key constraint errors with stale sessions
+  let validUserId: string | null = null;
+  if (currentUserId) {
+    const userExists = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { id: true },
+    });
+    if (userExists) {
+      validUserId = userExists.id;
+    }
+  }
+  if (!validUserId && validEmail) {
+    const userByEmail = await prisma.user.findUnique({
+      where: { email: validEmail },
+      select: { id: true },
+    });
+    if (userByEmail) {
+      validUserId = userByEmail.id;
+    }
+  }
 
   // Server side discount calculation
   let discountAmount = 0;
@@ -91,7 +112,7 @@ export async function createCheckoutSessionAction(data: {
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
-          userId: currentUserId,
+          userId: validUserId,
           status: OrderStatus.PENDING,
           paymentStatus: PaymentStatus.UNPAID,
           requestedWeightKg: totalKg,
@@ -113,7 +134,7 @@ export async function createCheckoutSessionAction(data: {
       if (discountAmount > 0) {
         await tx.activityLog.create({
           data: {
-            userId: currentUserId,
+            userId: validUserId,
             action: 'DISCOUNT_APPLIED',
             entity: 'Order',
             entityId: newOrder.id,
