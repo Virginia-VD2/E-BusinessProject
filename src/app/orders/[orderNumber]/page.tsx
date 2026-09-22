@@ -6,6 +6,8 @@ import { SnapPayButton } from '@/components/shop/SnapPayButton';
 import { SandboxSimulateButton } from '@/components/shop/SandboxSimulateButton';
 import { syncOrderStatusAction } from '@/actions/checkout';
 
+import { DeliveryTracker } from '@/components/shop/DeliveryTracker';
+
 export default async function OrderStatusPage({ params }: { params: { orderNumber: string } }) {
   let order = await prisma.order.findUnique({
     where: { orderNumber: params.orderNumber },
@@ -47,10 +49,22 @@ export default async function OrderStatusPage({ params }: { params: { orderNumbe
     <div className="min-h-screen bg-amber-50/20 flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-12 max-w-3xl flex-1">
+      <main className="container mx-auto px-4 py-8 max-w-4xl flex-1 space-y-6">
+        {/* Live Delivery Tracker & Monitor */}
+        <DeliveryTracker
+          orderNumber={order.orderNumber}
+          initialStatus={order.status}
+          paymentStatus={order.paymentStatus}
+          deliverySlot={order.deliverySlot}
+          shippingAddress={order.shippingAddress}
+          requestedWeightKg={order.requestedWeightKg}
+          actualWeightKg={order.actualWeightKg}
+        />
+
+        {/* Invoice Card */}
         <Card>
           <CardHeader className="text-center border-b bg-slate-50 rounded-t-lg">
-            <CardTitle className="text-2xl font-serif text-slate-900">Order Invoice</CardTitle>
+            <CardTitle className="text-2xl font-serif text-slate-900">Order Invoice & Detail</CardTitle>
             <p className="font-mono text-sm text-slate-500 mt-2">{order.orderNumber}</p>
           </CardHeader>
           

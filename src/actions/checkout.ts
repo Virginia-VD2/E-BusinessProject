@@ -333,3 +333,65 @@ export async function syncOrderStatusAction(orderNumber: string) {
     return { success: false, error: (error as Error).message };
   }
 }
+
+export async function updateOrderStatusAction(orderNumber: string, nextStatus: OrderStatus) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { orderNumber },
+    });
+
+    if (!order) {
+      return { success: false, error: 'Order not found' };
+    }
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { status: nextStatus },
+    });
+
+    await prisma.activityLog.create({
+      data: {
+        userId: order.userId,
+        action: 'ORDER_STATUS_UPDATED',
+        entity: 'Order',
+        entityId: order.id,
+        details: JSON.stringify({ orderNumber, newStatus: nextStatus }),
+      },
+    }).catch(() => {});
+
+    return { success: true, newStatus: nextStatus };
+  } catch (error: unknown) {
+    console.error('Update Order Status Error:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function claimOrderByNumberAction(orderNumber: string) {
+  try {
+    const session = await auth();
+    if (!session || !session.user || !session.user.id) {
+      return { success: false, error: 'Silakan login terlebih dahulu.' };
+    }
+
+    const cleanOrderNum = orderNumber.trim().toUpperCase();
+    const order = await prisma.order.findUnique({
+      where: { orderNumber: cleanOrderNum },
+    });
+
+    if (!order) {
+      return { success: false, error: 'Nomor pesanan tidak ditemukan.' };
+    }
+
+    // Assign to current user
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { userId: session.user.id },
+    });
+
+    return { success: true, orderNumber: cleanOrderNum };
+  } catch (error: unknown) {
+    console.error('Claim Order Error:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
