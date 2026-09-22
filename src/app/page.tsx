@@ -50,6 +50,16 @@ interface ChatMessage {
   };
 }
 
+const stripMarkdown = (text: string) => {
+  if (!text) return '';
+  return text
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/__/g, '')
+    .replace(/_/g, '')
+    .replace(/#{1,6}\s?/g, '');
+};
+
 const SAMPLE_PROMPTS = [
   'Mau ayam 2 kg potong 10, antar besok jam 7 pagi WITA...',
   'Bantu buatkan quotation grosir 50 kg untuk Warung Makan Airmadidi',
@@ -109,7 +119,7 @@ export default function HomePage() {
     {
       id: 'msg-1',
       sender: 'ai',
-      text: 'Halo! Saya **AYAMAJA**, asisten belanja ayam segar pribadi Anda di Minahasa Utara. 👋\n\nKamu bilang butuh apa, AYAMAJA yang mengurus sisanya! Silakan ketik atau gunakan perintah suara di bawah.',
+      text: 'Halo! Saya AYAMAJA, asisten belanja ayam segar pribadi Anda di Minahasa Utara. 👋\n\nKamu bilang butuh apa, AYAMAJA yang mengurus sisanya! Silakan ketik atau gunakan perintah suara di bawah.',
       timestamp: 'Baru saja',
     },
   ]);
@@ -159,7 +169,7 @@ export default function HomePage() {
         const aiMsg: ChatMessage = {
           id: `ai-${Date.now()}`,
           sender: 'ai',
-          text: `Siap! Saya telah men-generate **Draft AI Quotation B2B** khusus usaha Anda.\n\n` + quo.aiRecommendation,
+          text: `Siap! Saya telah men-generate Draft AI Quotation B2B khusus usaha Anda.\n\n` + quo.aiRecommendation,
           timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
           b2bQuotation: {
             quotationNumber: quo.quotationNumber,
@@ -182,11 +192,11 @@ export default function HomePage() {
 
       const aiReplyText =
         `Siap, saya paham! 🐓\n\n` +
-        `Saya siapkan **Ayam Broiler Segar (${kgVal} kg)** dengan pilihan potongan **${selectedCut.replace('_', ' ')}**.\n` +
-        `• Est. Harga Daging: **Rp ${dynamicPricing.estimatedPrice.toLocaleString('id-ID')}** (Rp ${BASE_PRICE_PER_KG.toLocaleString('id-ID')}/kg)\n` +
-        `• Ongkir (${deliveryInfo.zone}): **Rp ${deliveryInfo.fee.toLocaleString('id-ID')}**\n` +
-        `• Slot Pengiriman: **${selectedSlot}**\n\n` +
-        `💡 *Rekomendasi AI Cart*: Apakah Anda mau menambahkan **2 pasang Hati & Ampela Segar (+Rp 8.000)** untuk melengkapi olahan Anda?`;
+        `Saya siapkan Ayam Broiler Segar (${kgVal} kg) dengan pilihan potongan ${selectedCut.replace('_', ' ')}.\n` +
+        `• Est. Harga Daging: Rp ${dynamicPricing.estimatedPrice.toLocaleString('id-ID')} (Rp ${BASE_PRICE_PER_KG.toLocaleString('id-ID')}/kg)\n` +
+        `• Ongkir (${deliveryInfo.zone}): Rp ${deliveryInfo.fee.toLocaleString('id-ID')}\n` +
+        `• Slot Pengiriman: ${selectedSlot}\n\n` +
+        `💡 Rekomendasi AI Cart: Apakah Anda mau menambahkan 2 pasang Hati & Ampela Segar (+Rp 8.000) untuk melengkapi olahan Anda?`;
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
@@ -219,7 +229,7 @@ export default function HomePage() {
       {
         id: `ai-confirm-${Date.now()}`,
         sender: 'ai',
-        text: `🎉 **${item.name}** berhasil dimasukkan ke keranjang belanja Anda! Klik keranjang di kanan atas untuk lanjut checkout.`,
+        text: `${item.name} berhasil dimasukkan ke keranjang belanja Anda! Klik keranjang di kanan atas untuk lanjut checkout.`,
         timestamp: 'Baru saja',
       },
     ]);
@@ -349,7 +359,7 @@ export default function HomePage() {
                             : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
                         }`}
                       >
-                        <div className="whitespace-pre-line">{msg.text}</div>
+                        <div className="whitespace-pre-line">{stripMarkdown(msg.text)}</div>
 
                         {/* AI Cross-selling & Cart Suggestion UI */}
                         {msg.suggestionItem && (

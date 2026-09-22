@@ -161,18 +161,18 @@ export default function AdminDashboardPage() {
       const qLower = query.toLowerCase();
 
       if (qLower.includes('omset') || qLower.includes('pendapatan')) {
-        aiText = `📈 **Analisis Omset Hari Ini:**\n- Total penjualan terkumpul: **Rp 4.680.000** (130 kg terdistribusi).\n- Pelanggan UMKM menyumbang 68% omset.\n- Trend peningkatan 14% dibandingkan hari kemarin. Profit margin rata-rata: 22%.`;
+        aiText = `📈 Analisis Omset Hari Ini:\n- Total penjualan terkumpul: Rp 4.680.000 (130 kg terdistribusi).\n- Pelanggan UMKM menyumbang 68% omset.\n- Trend peningkatan 14% dibandingkan hari kemarin. Profit margin rata-rata: 22%.`;
       } else if (qLower.includes('naik') || qLower.includes('harga') || qLower.includes('2.000')) {
         const currentOmset = 130 * basePrice;
         const newOmset = 130 * (basePrice + 2000);
         const diff = newOmset - currentOmset;
-        aiText = `💡 **Simulasi Kenaikan Harga +Rp 2.000/kg:**\n- Harga baru: **Rp ${(basePrice + 2000).toLocaleString('id-ID')}/kg**.\n- Potensi kenaikan pendapatan harian: **+Rp ${diff.toLocaleString('id-ID')}**.\n- *Rekomendasi AI:* Berikan kuota harga khusus untuk 3 pelanggan UMKM langganan agar tingkat retensi tetap di atas 90%.`;
+        aiText = `💡 Simulasi Kenaikan Harga +Rp 2.000/kg:\n- Harga baru: Rp ${(basePrice + 2000).toLocaleString('id-ID')}/kg.\n- Potensi kenaikan pendapatan harian: +Rp ${diff.toLocaleString('id-ID')}.\n- Rekomendasi AI: Berikan kuota harga khusus untuk 3 pelanggan UMKM langganan agar tingkat retensi tetap di atas 90%.`;
       } else if (qLower.includes('umkm') || qLower.includes('follow up') || qLower.includes('pelanggan')) {
-        aiText = `🤝 **Daftar UMKM Perlu Follow-Up (Prediksi Restock):**\n1. **Resto Minahasa Jaya** - Terakhir pesan 3 hari lalu (Tingkat konsumsi: 20kg/2 hari). *Rekomendasikan Penawaran B2B Tier 20kg*.\n2. **Warung Mbak Ani** - Belum pesan untuk slot besok subuh. Kirim pengingat WhatsApp otomatis?`;
+        aiText = `🤝 Daftar UMKM Perlu Follow-Up (Prediksi Restock):\n1. Resto Minahasa Jaya - Terakhir pesan 3 hari lalu (Tingkat konsumsi: 20kg/2 hari). Rekomendasikan Penawaran B2B Tier 20kg.\n2. Warung Mbak Ani - Belum pesan untuk slot besok subuh. Kirim pengingat WhatsApp otomatis?`;
       } else if (qLower.includes('stok') || qLower.includes('pesan') || qLower.includes('peternak')) {
-        aiText = `📦 **Rekomendasi Pembelian ke Peternak (Mitra Minut):**\n- Stok saat ini: **${currentStockKg} kg**.\n- Prediksi kebutuhan Jumat-Sabtu: **220 kg**.\n- **Disarankan Order:** **150 kg** malam ini dari Peternakan Kalawat untuk tiba besok jam 04.00 WITA.`;
+        aiText = `📦 Rekomendasi Pembelian ke Peternak (Mitra Minut):\n- Stok saat ini: ${currentStockKg} kg.\n- Prediksi kebutuhan Jumat-Sabtu: 220 kg.\n- Disarankan Order: 150 kg malam ini dari Peternakan Kalawat untuk tiba besok jam 04.00 WITA.`;
       } else {
-        aiText = `🤖 **Saran AI Seller AYAMAJA:** Berdasarkan analisis tren belanja Minahasa Utara, permintaan ayam segar paling tinggi ada di slot jam 06:00 WITA. Pastikan proses pemotongan dan penimbangan selesai sebelum jam 05:30 WITA.`;
+        aiText = `🤖 Saran AI Seller AYAMAJA: Berdasarkan analisis tren belanja Minahasa Utara, permintaan ayam segar paling tinggi ada di slot jam 06:00 WITA. Pastikan proses pemotongan dan penimbangan selesai sebelum jam 05:30 WITA.`;
       }
 
       setCopilotMessages((prev) => [
