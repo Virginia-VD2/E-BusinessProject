@@ -5,7 +5,7 @@ const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
-const SMTP_FROM = process.env.SMTP_FROM || 'Velours Patisserie <dungusvirginia2@gmail.com>';
+const SMTP_FROM = process.env.SMTP_FROM || 'AYAMAJA Fresh Chicken Assistant <dungusvirginia2@gmail.com>';
 
 // Create Nodemailer Transporter
 const createTransporter = () => {
@@ -42,38 +42,38 @@ export async function sendRegistrationWelcomeEmail(userEmail: string, userName: 
       <head>
         <meta charset="utf-8">
         <style>
-          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fdfbf7; color: #3b2a1d; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #f3e8d6; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-          .header { background-color: #78350f; padding: 30px 20px; text-align: center; color: #fef3c7; }
-          .header h1 { font-family: Georgia, serif; margin: 0; font-size: 26px; letter-spacing: 1px; }
+          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcfcfc; color: #1e293b; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+          .header { background-color: #ea580c; padding: 30px 20px; text-align: center; color: #ffffff; }
+          .header h1 { font-family: sans-serif; font-weight: 800; margin: 0; font-size: 28px; letter-spacing: 1px; }
           .content { padding: 30px 25px; line-height: 1.6; }
-          .welcome-badge { display: inline-block; background-color: #fef3c7; color: #92400e; font-weight: bold; font-size: 12px; padding: 6px 12px; border-radius: 20px; margin-bottom: 15px; }
-          .button { display: inline-block; background-color: #78350f; color: #ffffff !important; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 8px; margin-top: 20px; }
-          .footer { background-color: #faf5eb; padding: 20px; text-align: center; font-size: 12px; color: #92400e; border-top: 1px solid #f3e8d6; }
+          .welcome-badge { display: inline-block; background-color: #ffedd5; color: #c2410c; font-weight: bold; font-size: 12px; padding: 6px 12px; border-radius: 20px; margin-bottom: 15px; }
+          .button { display: inline-block; background-color: #ea580c; color: #ffffff !important; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 8px; margin-top: 20px; }
+          .footer { background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Velours Patisserie</h1>
-            <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Artisanal French Bakery & Pastries</p>
+            <h1>🍗 AYAMAJA</h1>
+            <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.95;">Platform Asisten Belanja Cerdas Ayam Segar Minahasa Utara</p>
           </div>
           <div class="content">
             <span class="welcome-badge">Selamat Bergabung!</span>
-            <h2 style="font-family: Georgia, serif; color: #78350f; margin-top: 0;">Bonjour, ${userName}!</h2>
-            <p>Selamat datang di keluarga besar <strong>Velours Patisserie</strong>. Akun Anda telah berhasil terdaftar dengan email: <code>${userEmail}</code>.</p>
-            <p>Kini Anda dapat menikmati pilihan pastry Perancis segar yang dipanggang setiap pagi menggunakan <em>Normandy Butter</em> dan teknik <em>Sourdough Fermentation</em> alami.</p>
+            <h2 style="color: #ea580c; margin-top: 0;">Halo, ${userName}!</h2>
+            <p>Selamat datang di keluarga besar <strong>AYAMAJA</strong>. Akun Anda telah berhasil terdaftar dengan email: <code>${userEmail}</code>.</p>
+            <p>Kini Anda dapat menikmati layanan belanja ayam segar langsung dari peternak mitra Minahasa Utara dengan jaminan timbangan presisi digital IoT & potongan higienis (Potong 8, Utuh, Fillet Dada, dll.).</p>
             
-            <div style="background-color: #fffbe8; border: 1px dashed #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <strong style="color: #92400e;">💡 Tips Spesial Pengunjung:</strong>
-              <p style="margin: 5px 0 0 0; font-size: 13px; color: #78350f;">Dapatkan kesempatan bermain <strong>Kuis Seputar Velours</strong> & buka <strong>Voucher Diskon Easter Egg 15%</strong> untuk pembelian di atas Rp 100.000!</p>
+            <div style="background-color: #fff7ed; border: 1px dashed #f97316; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <strong style="color: #c2410c;">💡 Promo Spesial Pelanggan Baru:</strong>
+              <p style="margin: 5px 0 0 0; font-size: 13px; color: #9a3412;">Gunakan kode voucher <strong>AYAMFRESH15</strong> untuk mendapatkan potongan 15% pada pesanan pertama Anda!</p>
             </div>
 
-            <a href="https://www.velourspatisserie.web.id" class="button">Jelajahi Menu Pastry</a>
+            <a href="https://www.ayamaja.com" class="button">Pesan Ayam Segar Sekarang</a>
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} Velours Patisserie. All rights reserved.</p>
-            <p style="margin-top: 5px; opacity: 0.8;">Jl. Artisanal Bakery No. 1, Jakarta • Customer Support</p>
+            <p>© ${new Date().getFullYear()} AYAMAJA Minahasa Utara. All rights reserved.</p>
+            <p style="margin-top: 5px; opacity: 0.8;">Airmadidi - Kalawat Hub • Customer Support support@ayamaja.com</p>
           </div>
         </div>
       </body>
@@ -89,7 +89,7 @@ export async function sendRegistrationWelcomeEmail(userEmail: string, userName: 
     const info = await transporter.sendMail({
       from: SMTP_FROM,
       to: userEmail,
-      subject: '✨ Selamat Datang di Velours Patisserie - Konfirmasi Pendaftaran',
+      subject: '✨ Selamat Datang di AYAMAJA - Konfirmasi Pendaftaran',
       html: htmlContent,
     });
     console.log(`[EMAIL SUCCESS] Registration email sent to ${userEmail} (${info.messageId})`);
@@ -120,19 +120,19 @@ export async function sendOrderConfirmationEmail(orderData: {
     .map(
       (item) => `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #f3e8d6;">${item.name}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #f3e8d6; text-align: center;">${item.quantity}x</td>
-        <td style="padding: 10px; border-bottom: 1px solid #f3e8d6; text-align: right; font-weight: bold;">${formatIDR(item.price * item.quantity)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${item.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity} kg</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${formatIDR(item.price * item.quantity)}</td>
       </tr>
     `
     )
     .join('');
 
   const subtotal = orderData.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-  const statusTitle = orderData.isPaid ? 'Pembayaran Lunas & Pesanan Diproses' : 'Konfirmasi Pesanan Baru';
+  const statusTitle = orderData.isPaid ? 'Pembayaran Lunas & Ayam Segar Diproses' : 'Konfirmasi Pesanan Ayam Segar';
   const statusMessage = orderData.isPaid
-    ? `Hore, ${orderData.userName}! Pembayaran Anda telah kami terima (LUNAS). Pesanan Anda sedang dipanggang & dikemas oleh tim bakery kami!`
-    : `Terima kasih atas pesanan Anda, ${orderData.userName}! Pesanan Anda telah berhasil diterima dan sedang diproses oleh tim bakery kami.`;
+    ? `Hore, ${orderData.userName}! Pembayaran Anda telah kami terima (LUNAS). Pesanan ayam Anda sedang ditimbang & dipotong oleh mitra AYAMAJA Minahasa Utara!`
+    : `Terima kasih atas pesanan Anda, ${orderData.userName}! Pesanan Anda telah diterima dan siap diproses oleh tim AYAMAJA.`;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -140,41 +140,41 @@ export async function sendOrderConfirmationEmail(orderData: {
       <head>
         <meta charset="utf-8">
         <style>
-          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fdfbf7; color: #3b2a1d; margin: 0; padding: 0; }
-          .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #f3e8d6; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-          .header { background-color: #78350f; padding: 30px 20px; text-align: center; color: #fef3c7; }
-          .header h1 { font-family: Georgia, serif; margin: 0; font-size: 26px; }
+          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fcfcfc; color: #1e293b; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+          .header { background-color: #ea580c; padding: 30px 20px; text-align: center; color: #ffffff; }
+          .header h1 { font-family: sans-serif; font-weight: 800; margin: 0; font-size: 26px; }
           .content { padding: 30px 25px; line-height: 1.6; }
-          .order-number { background-color: #fef3c7; color: #78350f; font-family: monospace; font-weight: bold; font-size: 16px; padding: 8px 16px; border-radius: 8px; display: inline-block; margin-bottom: 15px; }
-          .status-badge { display: inline-block; background-color: ${orderData.isPaid ? '#d1fae5' : '#fef3c7'}; color: ${orderData.isPaid ? '#065f46' : '#78350f'}; font-weight: bold; font-size: 12px; padding: 4px 12px; border-radius: 20px; margin-bottom: 10px; }
+          .order-number { background-color: #ffedd5; color: #9a3412; font-family: monospace; font-weight: bold; font-size: 16px; padding: 8px 16px; border-radius: 8px; display: inline-block; margin-bottom: 15px; }
+          .status-badge { display: inline-block; background-color: ${orderData.isPaid ? '#d1fae5' : '#ffedd5'}; color: ${orderData.isPaid ? '#065f46' : '#9a3412'}; font-weight: bold; font-size: 12px; padding: 4px 12px; border-radius: 20px; margin-bottom: 10px; }
           table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
-          th { background-color: #faf5eb; color: #78350f; padding: 10px; text-align: left; border-bottom: 2px solid #f3e8d6; }
+          th { background-color: #f8fafc; color: #475569; padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
           .totals { font-size: 14px; line-height: 1.8; }
-          .grand-total { font-size: 18px; font-weight: bold; color: #78350f; border-top: 2px solid #78350f; padding-top: 8px; margin-top: 8px; }
-          .footer { background-color: #faf5eb; padding: 20px; text-align: center; font-size: 12px; color: #92400e; border-top: 1px solid #f3e8d6; }
+          .grand-total { font-size: 18px; font-weight: bold; color: #ea580c; border-top: 2px solid #ea580c; padding-top: 8px; margin-top: 8px; }
+          .footer { background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Velours Patisserie</h1>
-            <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">${statusTitle}</p>
+            <h1>🍗 AYAMAJA</h1>
+            <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.95;">${statusTitle}</p>
           </div>
           <div class="content">
-            <span class="status-badge">${orderData.isPaid ? 'STATUS: LUNAS (PAID)' : 'STATUS: PENDING PAYMENT'}</span>
-            <h2 style="font-family: Georgia, serif; color: #78350f; margin-top: 0;">${statusTitle}</h2>
+            <span class="status-badge">${orderData.isPaid ? 'STATUS: LUNAS (PAID)' : 'STATUS: MENUNGGU PEMBAYARAN'}</span>
+            <h2 style="color: #ea580c; margin-top: 0;">${statusTitle}</h2>
             <p>${statusMessage}</p>
 
             <div style="text-align: center; margin: 15px 0;">
               <span class="order-number">Nomor Pesanan: ${orderData.orderNumber}</span>
             </div>
 
-            <h3 style="font-family: Georgia, serif; color: #78350f; border-bottom: 1px solid #f3e8d6; padding-bottom: 8px;">Rincian Produk</h3>
+            <h3 style="color: #ea580c; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Rincian Produk Ayam</h3>
             <table>
               <thead>
                 <tr>
                   <th>Produk</th>
-                  <th style="text-align: center;">Qty</th>
+                  <th style="text-align: center;">Berat (Kg)</th>
                   <th style="text-align: right;">Subtotal</th>
                 </tr>
               </thead>
@@ -204,14 +204,14 @@ export async function sendOrderConfirmationEmail(orderData: {
               </div>
             </div>
 
-            <div style="background-color: #faf5eb; padding: 15px; border-radius: 8px; margin-top: 25px; font-size: 13px;">
-              <strong style="color: #78350f;">Alamat Pengiriman:</strong>
-              <p style="margin: 5px 0 0 0; color: #451a03;">${orderData.shippingAddress}</p>
+            <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 25px; font-size: 13px; border: 1px solid #e2e8f0;">
+              <strong style="color: #ea580c;">Alamat Pengiriman Minut:</strong>
+              <p style="margin: 5px 0 0 0; color: #334155;">${orderData.shippingAddress}</p>
             </div>
           </div>
           <div class="footer">
-            <p>Butuh bantuan dengan pesanan Anda? Hubungi kami di support@velourspatisserie.web.id</p>
-            <p style="margin-top: 5px; opacity: 0.8;">© ${new Date().getFullYear()} Velours Patisserie</p>
+            <p>Butuh bantuan dengan pesanan Anda? Hubungi kami di support@ayamaja.com</p>
+            <p style="margin-top: 5px; opacity: 0.8;">© ${new Date().getFullYear()} AYAMAJA Minahasa Utara</p>
           </div>
         </div>
       </body>
@@ -219,8 +219,8 @@ export async function sendOrderConfirmationEmail(orderData: {
   `;
 
   const subjectText = orderData.isPaid
-    ? `✅ Pembayaran Lunas! Pesanan ${orderData.orderNumber} - Velours Patisserie`
-    : `🍰 Konfirmasi Pesanan ${orderData.orderNumber} - Velours Patisserie`;
+    ? `✅ Pembayaran Lunas! Pesanan ${orderData.orderNumber} - AYAMAJA Fresh Chicken`
+    : `🍗 Konfirmasi Pesanan ${orderData.orderNumber} - AYAMAJA Fresh Chicken`;
 
   if (!transporter) {
     console.log(`[EMAIL SIMULATION] Order email triggered for: ${orderData.userEmail} (${orderData.orderNumber})`);

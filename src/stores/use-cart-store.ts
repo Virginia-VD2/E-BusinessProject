@@ -144,7 +144,7 @@ export const useCartStore = create<CartStore>()(
       },
     }),
     {
-      name: 'velours-cart-storage',
+      name: 'ayamaja-cart-storage',
       storage: createJSONStorage(() => localStorage),
     }
   )

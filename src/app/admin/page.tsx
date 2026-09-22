@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp,
@@ -16,9 +16,15 @@ import {
   ArrowUpRight,
   ShieldAlert,
   ArrowLeft,
-  Award
+  Award,
+  Truck,
+  UtensilsCrossed,
+  Clock,
+  UserCheck
 } from 'lucide-react';
-import { calculateDynamicPricing, BASE_PRICE_PER_KG } from '@/lib/ayamaja-services';
+import { BASE_PRICE_PER_KG } from '@/lib/ayamaja-services';
+import { getAdminOrdersAction, updateAdminOrderStatusAction, verifyAdminWeightAction } from '@/actions/admin';
+import { OrderStatus } from '@prisma/client';
 
 // Interfaces for UI state
 interface CopilotMessage {
@@ -26,7 +32,6 @@ interface CopilotMessage {
   sender: 'user' | 'ai';
   text: string;
   timestamp: string;
-  actionableLink?: string;
 }
 
 interface Complaint {
@@ -41,18 +46,6 @@ interface Complaint {
   isResolved: boolean;
 }
 
-interface PendingOrder {
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  cutOption: string;
-  requestedKg: number;
-  actualKg?: number;
-  status: 'MENUNGGU_TIMBANG' | 'SIAP_KIRIM' | 'TERKIRIM';
-  deliverySlot: string;
-  deliveryZone: string;
-}
-
 export default function AdminDashboardPage() {
   // Live State Simulators
   const [currentStockKg, setCurrentStockKg] = useState<number>(85);
@@ -60,6 +53,46 @@ export default function AdminDashboardPage() {
   const [supplierOrderKg, setSupplierOrderKg] = useState<number>(150);
   const [isOrderingSupplier, setIsOrderingSupplier] = useState<boolean>(false);
   const [supplierOrderSuccess, setSupplierOrderSuccess] = useState<string | null>(null);
+
+  // Real Database Orders State
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [dbOrders, setDbOrders] = useState<any[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState<boolean>(true);
+  const [inputDbActualWeights, setInputDbActualWeights] = useState<{ [key: string]: string }>({});
+
+  // Fetch real orders from database
+  const loadOrders = useCallback(async () => {
+    const res = await getAdminOrdersAction();
+    if (res.success && res.orders) {
+      setDbOrders(res.orders);
+    }
+    setIsLoadingOrders(false);
+  }, []);
+
+  useEffect(() => {
+    loadOrders();
+    const interval = setInterval(loadOrders, 5000); // Polling every 5 seconds for new orders
+    return () => clearInterval(interval);
+  }, [loadOrders]);
+
+  // Handle Admin updating status
+  const handleUpdateOrderStatus = async (orderNumber: string, nextStatus: OrderStatus) => {
+    // Optimistic UI update
+    setDbOrders((prev) =>
+      prev.map((o) => (o.orderNumber === orderNumber ? { ...o, status: nextStatus } : o))
+    );
+    await updateAdminOrderStatusAction(orderNumber, nextStatus);
+    loadOrders();
+  };
+
+  // Handle Admin verifying IoT scale weight
+  const handleVerifyWeightSubmit = async (orderNumber: string, orderId: string) => {
+    const val = parseFloat(inputDbActualWeights[orderId] || '0');
+    if (isNaN(val) || val <= 0) return;
+
+    await verifyAdminWeightAction(orderNumber, val);
+    loadOrders();
+  };
 
   // Copilot Chat State
   const [copilotInput, setCopilotInput] = useState('');
@@ -108,37 +141,6 @@ export default function AdminDashboardPage() {
       isResolved: false,
     }
   ]);
-
-  // Orders waiting for actual scale verification
-  const [orders, setOrders] = useState<PendingOrder[]>([
-    {
-      id: 'ord-101',
-      orderNumber: 'AYM-89210',
-      customerName: 'RM Sederhana Kalawat',
-      cutOption: 'Potong 10 Porsi',
-      requestedKg: 15.0,
-      actualKg: 15.3,
-      status: 'MENUNGGU_TIMBANG',
-      deliverySlot: 'Pagi Subuh (06:00 WITA)',
-      deliveryZone: 'Kalawat',
-    },
-    {
-      id: 'ord-102',
-      orderNumber: 'AYM-89211',
-      customerName: 'Ibu Grace',
-      cutOption: 'Dada Ayam Fillet',
-      requestedKg: 2.5,
-      actualKg: undefined,
-      status: 'MENUNGGU_TIMBANG',
-      deliverySlot: 'Pagi Reguler (08:00 WITA)',
-      deliveryZone: 'Airmadidi',
-    },
-  ]);
-
-  const [inputActualWeights, setInputActualWeights] = useState<{ [key: string]: string }>({
-    'ord-101': '15.3',
-    'ord-102': '',
-  });
 
   // Copilot Assistant Logic
   const handleSendCopilot = (textToSend?: string) => {
@@ -198,16 +200,6 @@ export default function AdminDashboardPage() {
     }, 1000);
   };
 
-  // Verify scale weight
-  const handleVerifyWeight = (orderId: string) => {
-    const val = parseFloat(inputActualWeights[orderId]);
-    if (isNaN(val) || val <= 0) return;
-
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, actualKg: val, status: 'SIAP_KIRIM' } : o))
-    );
-  };
-
   // Resolve complaint
   const handleResolveComplaint = (id: string) => {
     setComplaints((prev) =>
@@ -234,11 +226,17 @@ export default function AdminDashboardPage() {
                   Minahasa Utara Hub
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Pusat Kendali & Asisten Bisnis Berbasis AI</p>
+              <p className="text-xs text-slate-400">Pusat Kendali Live Order & Asisten Bisnis AI</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => loadOrders()}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 px-3 py-2 rounded-lg border border-orange-500/30 transition"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoadingOrders ? 'animate-spin' : ''}`} /> Sync Real-Time
+            </button>
             <Link
               href="/"
               className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3.5 py-2 rounded-lg transition border border-slate-700"
@@ -295,6 +293,166 @@ export default function AdminDashboardPage() {
               Berdasarkan 28 ulasan & keluhan terkini
             </div>
           </div>
+        </div>
+
+        {/* SECTION REAL-TIME ADMIN ORDER CONTROL CENTER */}
+        <div className="bg-slate-800 border border-orange-500/40 rounded-2xl p-6 shadow-2xl space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-600/20 border border-orange-500/40 text-orange-400 flex items-center justify-center font-bold text-xl">
+                🚚
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-white">Pusat Pesanan Masuk & Control Status Live</h2>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Live Sync Active
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Admin dapat meng-update berat timbangan IoT dan memajukan status pengantaran secara real-time yang akan langsung terlihat di monitor HP pembeli.
+                </p>
+              </div>
+            </div>
+
+            <div className="text-xs text-slate-400 font-medium">
+              Total Order Terdaftar: <strong className="text-white text-sm">{dbOrders.length}</strong>
+            </div>
+          </div>
+
+          {dbOrders.length === 0 ? (
+            <div className="py-12 text-center text-slate-400 bg-slate-900/50 rounded-xl border border-slate-800">
+              <Clock className="w-10 h-10 mx-auto text-slate-600 mb-2" />
+              <p className="font-semibold">Belum Ada Pesanan Pelanggan Masuk</p>
+              <p className="text-xs text-slate-500 mt-1">Pesanan yang dibuat customer di toko akan otomatis muncul di sini secara live.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {dbOrders.map((ord: any) => {
+                const requestedKg = ord.requestedWeightKg || 1;
+                const isPaid = ord.paymentStatus === 'SETTLEMENT';
+
+                return (
+                  <div key={ord.id} className="bg-slate-900 border border-slate-700/80 rounded-xl p-5 space-y-4 transition hover:border-slate-600">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-800 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-base font-bold text-amber-300">{ord.orderNumber}</span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${isPaid ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'}`}>
+                            {ord.paymentStatus}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            • {new Date(ord.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} WITA
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-300 mt-1 flex items-center gap-2">
+                          <UserCheck className="w-3.5 h-3.5 text-orange-400" />
+                          <span>Pemesan: <strong className="text-white">{ord.user?.name || 'Pelanggan Guest'}</strong> ({ord.user?.email || 'email-guest'})</span>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-xs text-slate-400">Slot Pengantaran:</div>
+                        <div className="text-xs font-bold text-amber-400">{ord.deliverySlot || 'Pagi (06:00 - 08:00 WITA)'}</div>
+                      </div>
+                    </div>
+
+                    {/* Items & Shipping */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <div className="bg-slate-800/80 p-3 rounded-lg border border-slate-700/50 space-y-1">
+                        <div className="font-bold text-slate-200 flex items-center gap-1.5">
+                          <UtensilsCrossed className="w-3.5 h-3.5 text-orange-400" /> Rincian Produk:
+                        </div>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {ord.items?.map((item: any) => (
+                          <div key={item.id} className="flex justify-between text-slate-300 pt-1">
+                            <span>{item.product?.name || 'Ayam Segar'}</span>
+                            <span className="font-bold">{item.requestedKg} kg ({formatIDR(item.subtotal)})</span>
+                          </div>
+                        ))}
+                        <div className="border-t border-slate-700 pt-1 font-bold text-slate-100 flex justify-between">
+                          <span>Total Tagihan:</span>
+                          <span className="text-emerald-400 text-sm">{formatIDR(ord.finalAmount)}</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-800/80 p-3 rounded-lg border border-slate-700/50 space-y-1">
+                        <div className="font-bold text-slate-200">📍 Alamat Pengiriman Minut:</div>
+                        <p className="text-slate-300 italic">{ord.shippingAddress?.replace(/["']/g, '')}</p>
+                      </div>
+                    </div>
+
+                    {/* Controls: Scale Weight & Status Updater */}
+                    <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                      {/* IoT Scale Weight Input */}
+                      <div className="flex items-center gap-2">
+                        <Scale className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        <label className="text-xs font-semibold text-slate-300">Timbangan IoT (Actual):</label>
+                        <input
+                          type="number"
+                          step="0.05"
+                          placeholder={ord.actualWeightKg ? String(ord.actualWeightKg) : String(requestedKg)}
+                          value={inputDbActualWeights[ord.id] !== undefined ? inputDbActualWeights[ord.id] : (ord.actualWeightKg ? String(ord.actualWeightKg) : '')}
+                          onChange={(e) => setInputDbActualWeights({ ...inputDbActualWeights, [ord.id]: e.target.value })}
+                          className="w-20 bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-2 py-1 font-bold text-center focus:border-orange-500 focus:outline-none"
+                        />
+                        <span className="text-xs font-bold text-slate-400">kg</span>
+                        <button
+                          onClick={() => handleVerifyWeightSubmit(ord.orderNumber, ord.id)}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-lg transition"
+                        >
+                          Simpan Timbangan
+                        </button>
+                      </div>
+
+                      {/* Status Action Buttons */}
+                      <div className="flex flex-wrap items-center gap-1.5 w-full lg:w-auto">
+                        <span className="text-xs text-slate-400 font-semibold mr-1">Update Status Live:</span>
+
+                        <button
+                          onClick={() => handleUpdateOrderStatus(ord.orderNumber, OrderStatus.CONFIRMED)}
+                          className={`text-xs px-2.5 py-1 rounded font-semibold transition border ${ord.status === 'CONFIRMED' ? 'bg-blue-600 text-white border-blue-500 ring-2 ring-blue-500/40' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'}`}
+                        >
+                          1. Dikonfirmasi
+                        </button>
+
+                        <button
+                          onClick={() => handleUpdateOrderStatus(ord.orderNumber, OrderStatus.WEIGHT_VERIFIED)}
+                          className={`text-xs px-2.5 py-1 rounded font-semibold transition border ${ord.status === 'WEIGHT_VERIFIED' ? 'bg-purple-600 text-white border-purple-500 ring-2 ring-purple-500/40' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'}`}
+                        >
+                          2. Ditimbang
+                        </button>
+
+                        <button
+                          onClick={() => handleUpdateOrderStatus(ord.orderNumber, OrderStatus.PROCESSING)}
+                          className={`text-xs px-2.5 py-1 rounded font-semibold transition border ${ord.status === 'PROCESSING' ? 'bg-orange-600 text-white border-orange-500 ring-2 ring-orange-500/40' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'}`}
+                        >
+                          3. Dipotong
+                        </button>
+
+                        <button
+                          onClick={() => handleUpdateOrderStatus(ord.orderNumber, OrderStatus.SHIPPED)}
+                          className={`text-xs px-2.5 py-1 rounded font-bold transition border ${ord.status === 'SHIPPED' ? 'bg-amber-500 text-slate-900 border-amber-400 ring-2 ring-amber-400/50' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'}`}
+                        >
+                          <Truck className="w-3 h-3 inline mr-1" />
+                          4. Kirim (OTW)
+                        </button>
+
+                        <button
+                          onClick={() => handleUpdateOrderStatus(ord.orderNumber, OrderStatus.DELIVERED)}
+                          className={`text-xs px-2.5 py-1 rounded font-bold transition border ${ord.status === 'DELIVERED' ? 'bg-emerald-600 text-white border-emerald-500 ring-2 ring-emerald-500/40' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'}`}
+                        >
+                          <CheckCircle2 className="w-3 h-3 inline mr-1" />
+                          5. Selesai
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* SECTION 2 & 3: Smart Inventory & Demand Forecasting Widget */}
@@ -599,87 +757,6 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* SECTION: Timbangan Digital Live Integration Verification */}
-        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-700">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
-                <Scale className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Verifikasi Timbangan Digital IoT (Actual Weight)</h3>
-                <p className="text-xs text-slate-400">Input Berat Aktual Hasil Timbangan Pemotongan Sebelum Dikirim</p>
-              </div>
-            </div>
-
-            <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Timbangan Digital Online
-            </span>
-          </div>
-
-          <div className="divide-y divide-slate-700/80">
-            {orders.map((ord) => {
-              const actualVal = parseFloat(inputActualWeights[ord.id] || '0');
-              const pricing = calculateDynamicPricing(basePrice, ord.requestedKg, actualVal > 0 ? actualVal : ord.requestedKg);
-
-              return (
-                <div key={ord.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">{ord.orderNumber}</span>
-                      <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300 font-semibold">
-                        {ord.cutOption}
-                      </span>
-                      <span className="text-xs text-orange-400 font-medium">[{ord.deliveryZone}]</span>
-                    </div>
-                    <div className="text-xs text-slate-400">
-                      Pemesan: <strong className="text-slate-200">{ord.customerName}</strong> • Slot: {ord.deliverySlot}
-                    </div>
-                    <div className="text-xs text-slate-300">
-                      Estimasi Awal: <strong className="text-white">{ord.requestedKg} kg</strong> ({formatIDR(pricing.estimatedPrice)})
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-slate-900 p-3 rounded-xl border border-slate-700">
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs font-semibold text-slate-400">Berat Timbangan:</label>
-                      <input
-                        type="number"
-                        step="0.05"
-                        placeholder="e.g. 15.3"
-                        value={inputActualWeights[ord.id] || ''}
-                        onChange={(e) =>
-                          setInputActualWeights({ ...inputActualWeights, [ord.id]: e.target.value })
-                        }
-                        className="w-24 bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-orange-500 font-bold"
-                      />
-                      <span className="text-xs font-bold text-slate-400">kg</span>
-                    </div>
-
-                    <div className="text-xs text-slate-300">
-                      <div>Total Pas: <strong className="text-emerald-400 text-sm">{formatIDR(pricing.actualPrice)}</strong></div>
-                      <div className="text-[10px] text-slate-400">{pricing.adjustmentNote}</div>
-                    </div>
-
-                    {ord.status === 'SIAP_KIRIM' ? (
-                      <span className="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-3 py-1.5 rounded-lg border border-emerald-500/30">
-                        ✓ Terverifikasi Timbangan
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleVerifyWeight(ord.id)}
-                        className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold px-3.5 py-2 rounded-lg transition"
-                      >
-                        Kunci Berat & Cetak Struk
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
       </main>
