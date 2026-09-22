@@ -10,6 +10,9 @@ const SERVER_DISCOUNTS: Record<
   string,
   { type: 'percentage' | 'fixed'; value: number; minSpend: number }
 > = {
+  AYAMFRESH15: { type: 'percentage', value: 15, minSpend: 100000 },
+  MINUT20K: { type: 'fixed', value: 20000, minSpend: 100000 },
+  AYAMCHICKEN10: { type: 'percentage', value: 10, minSpend: 100000 },
   EASTERBAKE15: { type: 'percentage', value: 15, minSpend: 100000 },
   BAKER20K: { type: 'fixed', value: 20000, minSpend: 100000 },
   SECRETBAKE10: { type: 'percentage', value: 10, minSpend: 100000 },

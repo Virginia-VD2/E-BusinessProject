@@ -3,106 +3,147 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../src/lib/prisma';
 
 async function main() {
-  console.log('Seeding database...');
+  console.log('🧹 Clearing old database records...');
 
-  // Create Admin User
+  // Delete dependent records first
+  await prisma.orderItem.deleteMany().catch(() => {});
+  await prisma.digitalReceipt.deleteMany().catch(() => {});
+  await prisma.complaint.deleteMany().catch(() => {});
+  await prisma.review.deleteMany().catch(() => {});
+  await prisma.quotation.deleteMany().catch(() => {});
+  await prisma.subscription.deleteMany().catch(() => {});
+  await prisma.activityLog.deleteMany().catch(() => {});
+  await prisma.customerPreference.deleteMany().catch(() => {});
+  await prisma.order.deleteMany().catch(() => {});
+  await prisma.cutOption.deleteMany().catch(() => {});
+  await prisma.product.deleteMany().catch(() => {});
+  await prisma.user.deleteMany().catch(() => {});
+
+  console.log('🐓 Seeding AYAMAJA Fresh Chicken database...');
+
+  // 1. Create Admin & Seller Users
   const adminPassword = await bcrypt.hash('admin123', 10);
-  await prisma.user.upsert({
-    where: { email: 'admin@velours.com' },
-    update: {},
-    create: {
-      name: 'Velours Admin',
-      email: 'admin@velours.com',
+  const sellerPassword = await bcrypt.hash('seller123', 10);
+  const userPassword = await bcrypt.hash('user123', 10);
+
+  const admin = await prisma.user.create({
+    data: {
+      name: 'AYAMAJA Admin',
+      email: 'admin@ayamaja.com',
       passwordHash: adminPassword,
       role: 'ADMIN',
+      customerType: 'BUSINESS',
+      businessName: 'AYAMAJA Head Office Minut',
     },
   });
 
-  // Create Regular User
-  const userPassword = await bcrypt.hash('user123', 10);
-  await prisma.user.upsert({
-    where: { email: 'customer@example.com' },
-    update: {},
-    create: {
-      name: 'John Doe',
-      email: 'customer@example.com',
+  const seller = await prisma.user.create({
+    data: {
+      name: 'Mitra Seller Kalawat',
+      email: 'seller@ayamaja.com',
+      passwordHash: sellerPassword,
+      role: 'SELLER',
+      customerType: 'BUSINESS',
+      businessName: 'Rumah Potong Ayam Kalawat',
+      phone: '081234567890',
+      address: 'Jl. Raya Manado-Bitung Km 12, Kalawat, Minahasa Utara',
+    },
+  });
+
+  // 2. Create Customers
+  const customer1 = await prisma.user.create({
+    data: {
+      name: 'Nathan Tambuku',
+      email: 'nathantambuku13@gmail.com',
       passwordHash: userPassword,
-      role: 'USER',
+      role: 'CUSTOMER',
+      customerType: 'PERSONAL',
+      phone: '082199887766',
+      address: 'Perumahan Airmadidi Asri Blok C-12, Airmadidi, Minahasa Utara',
+      loyaltyPoints: 120,
     },
   });
 
-  // Create Products
-  const products = [
+  const customer2 = await prisma.user.create({
+    data: {
+      name: 'Resto Minahasa Jaya',
+      email: 'warung.mbakani@gmail.com',
+      passwordHash: userPassword,
+      role: 'CUSTOMER',
+      customerType: 'BUSINESS',
+      businessName: 'Resto Minahasa Jaya',
+      phone: '085244332211',
+      address: 'Jalan Utama Sukur, Kauditan, Minahasa Utara',
+      loyaltyPoints: 450,
+    },
+  });
+
+  // 3. Create AYAMAJA Products
+  const productsData = [
     {
-      name: 'French Baguette Tradition',
-      slug: 'french-baguette-tradition',
-      description: 'Crispy outer shell with soft, chewy crumb baked according to authentic Parisian standards.',
-      price: 10000,
-      stock: 20,
-      category: 'Artisan Bread',
-      images: ['https://images.unsplash.com/photo-1597079910443-60c43fc4f729?w=600&auto=format&fit=crop'],
+      name: 'Ayam Broiler Segar (Per Kg)',
+      slug: 'ayam-broiler-segar',
+      description: 'Dipotong fresh setiap jam 04:00 WITA dari peternakan lokal Minahasa Utara. Bebas bahan pengawet.',
+      pricePerKg: 36000,
+      stockKg: 150.0,
+      category: 'AYAM_SEGAR',
+      images: ['https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=600&q=80'],
     },
     {
-      name: 'Classic Butter Croissant',
-      slug: 'classic-butter-croissant',
-      description: 'Flaky, buttery, traditional French croissant baked fresh daily with pure Normandy butter.',
-      price: 12000,
-      stock: 40,
-      category: 'Viennoiserie',
-      images: ['https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&auto=format&fit=crop'],
+      name: 'Dada Ayam Fillet Segar',
+      slug: 'dada-ayam-fillet',
+      description: '100% daging dada ayam bersih tanpa tulang & lemak. Tinggi protein cocok untuk diet & resto.',
+      pricePerKg: 48000,
+      stockKg: 45.0,
+      category: 'PART_CUT',
+      images: ['https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=600&q=80'],
     },
     {
-      name: 'Pain au Chocolat',
-      slug: 'pain-au-chocolat',
-      description: 'Laminated pastry dough filled with rich 64% Valrhona dark chocolate bars.',
-      price: 15000,
-      stock: 30,
-      category: 'Viennoiserie',
-      images: ['https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=600&auto=format&fit=crop'],
+      name: 'Paha Ayam Segar (Paha Atas & Bawah)',
+      slug: 'paha-ayam-segar',
+      description: 'Juicy, gurih, dan tekstur empuk pas untuk ayam goreng krispi & bakar woku.',
+      pricePerKg: 42000,
+      stockKg: 60.0,
+      category: 'PART_CUT',
+      images: ['https://images.unsplash.com/photo-1588168333986-5078d3ae3976?auto=format&fit=crop&w=600&q=80'],
     },
     {
-      name: 'Almond Croissant',
-      slug: 'almond-croissant',
-      description: 'Twice-baked croissant filled with rich almond frangipane paste and topped with toasted sliced almonds.',
-      price: 18000,
-      stock: 25,
-      category: 'Viennoiserie',
-      images: ['https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop'],
+      name: 'Hati & Ampela Ayam Segar (Per Pasang)',
+      slug: 'hati-ampela-segar',
+      description: 'Pilihan jeroan ayam bersih & segar dipotong subuh.',
+      pricePerKg: 20000,
+      stockKg: 30.0,
+      category: 'JEROAN',
+      images: ['https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80'],
     },
     {
-      name: 'Artisanal Sourdough Loaf',
-      slug: 'artisanal-sourdough-loaf',
-      description: 'Naturally fermented for 36 hours with wild yeast starter, dark crispy crust, and open airy crumb.',
-      price: 20000,
-      stock: 15,
-      category: 'Artisan Bread',
-      images: ['https://images.unsplash.com/photo-1589367920969-ab8e050bbb04?w=600&auto=format&fit=crop'],
-    },
-    {
-      name: 'Brioche Nanterre',
-      slug: 'brioche-nanterre',
-      description: 'Ultra soft, rich enriched dough loaf made with fresh eggs and high fat french butter.',
-      price: 25000,
-      stock: 10,
-      category: 'Enriched Bread',
-      images: ['https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&auto=format&fit=crop'],
+      name: 'Ayam Kampung Segar Utuh',
+      slug: 'ayam-kampung-segar',
+      description: 'Ayam kampung asli Minahasa Utara, daging manis gurih cocok untuk masakan khas Minahasa (Tinutuan / Woku).',
+      pricePerKg: 65000,
+      stockKg: 25.0,
+      category: 'AYAM_KAMPUNG',
+      images: ['https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=600&q=80'],
     },
   ];
 
-  for (const item of products) {
-    await prisma.product.upsert({
-      where: { slug: item.slug },
-      update: item,
-      create: item,
-    });
+  for (const p of productsData) {
+    await prisma.product.create({ data: p });
   }
 
-  console.log('Seeding completed successfully!');
+  console.log('✅ Database AYAMAJA successfully reset & seeded!');
+  console.log('------------------------------------------------');
+  console.log('Kredensial Login Testing AYAMAJA:');
+  console.log('1. ADMIN : admin@ayamaja.com / admin123');
+  console.log('2. SELLER: seller@ayamaja.com / seller123');
+  console.log('3. USER  : nathantambuku13@gmail.com / user123');
+  console.log('4. UMKM  : warung.mbakani@gmail.com / user123');
+  console.log('------------------------------------------------');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('Seeding error:', e);
     process.exit(1);
   })
   .finally(async () => {

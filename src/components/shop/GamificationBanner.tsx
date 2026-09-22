@@ -35,37 +35,37 @@ export function GamificationBanner({ variant = 'banner' }: GamificationBannerPro
           onClick={() => setIsModalOpen(true)}
           className={`cursor-pointer rounded-xl p-3.5 border transition-all flex items-center justify-between gap-3 shadow-sm ${
             isEligible
-              ? 'bg-gradient-to-r from-amber-500/10 via-amber-400/20 to-orange-500/10 border-amber-400/60 hover:border-amber-500'
-              : 'bg-amber-50/50 border-amber-200/60 hover:bg-amber-100/50'
+              ? 'bg-gradient-to-r from-red-500/10 via-orange-400/20 to-amber-500/10 border-red-400/60 hover:border-red-500'
+              : 'bg-red-50/50 border-red-200/60 hover:bg-red-100/50'
           }`}
         >
           <div className="flex items-center gap-3">
             <div
               className={`p-2 rounded-lg ${
-                isEligible ? 'bg-amber-800 text-amber-100' : 'bg-amber-200 text-amber-800'
+                isEligible ? 'bg-red-800 text-red-100' : 'bg-red-200 text-red-800'
               }`}
             >
               {isEligible ? <HelpCircle className="h-5 w-5 animate-pulse" /> : <Lock className="h-5 w-5" />}
             </div>
             <div>
-              <div className="text-xs font-bold font-serif text-amber-950 flex items-center gap-1.5">
-                <span>Kuis Seputar Velours (Diskon Easter Egg)</span>
+              <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <span>Kuis AYAMAJA (Voucher Ayam Segar)</span>
                 {isEligible && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-sans font-bold ${hasPlayedGame ? 'bg-amber-800 text-white' : 'bg-emerald-600 text-white'}`}>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${hasPlayedGame ? 'bg-red-800 text-white' : 'bg-emerald-600 text-white'}`}>
                     {hasPlayedGame ? 'Sudah Dimainkan (1x)' : '1x Main'}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-amber-900/80 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 {isEligible
                   ? hasPlayedGame
                     ? 'Lihat/Pasang voucher diskon hasil kuis Anda'
-                    : 'Jawab kuis & buka kode diskon rahasia 1x sebelum bayar!'
+                    : 'Jawab kuis & buka voucher diskon rahasia AYAMAJA 1x sebelum bayar!'
                   : `Kurang ${formatIDR(neededAmount)} lagi untuk 1x kesempatan kuis`}
               </p>
             </div>
           </div>
-          <Button size="sm" variant={isEligible ? 'default' : 'outline'} className={isEligible ? 'bg-amber-800 hover:bg-amber-900 text-white shrink-0' : 'border-amber-300 text-amber-900 shrink-0'}>
+          <Button size="sm" variant={isEligible ? 'default' : 'outline'} className={isEligible ? 'bg-red-600 hover:bg-red-700 text-white shrink-0' : 'border-red-300 text-red-900 shrink-0'}>
             {isEligible ? (hasPlayedGame ? 'Voucher' : 'Kuis') : 'Info'}
           </Button>
         </div>
@@ -80,7 +80,7 @@ export function GamificationBanner({ variant = 'banner' }: GamificationBannerPro
       <>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-amber-800 to-amber-900 text-amber-50 p-3.5 rounded-full shadow-2xl hover:scale-105 transition-all border-2 border-amber-300/40 flex items-center gap-2 group"
+          className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-red-600 to-orange-600 text-white p-3.5 rounded-full shadow-2xl hover:scale-105 transition-all border-2 border-orange-300/40 flex items-center gap-2 group"
         >
           <div className="relative">
             <HelpCircle className="h-6 w-6 text-amber-300 group-hover:rotate-12 transition-transform" />
@@ -92,7 +92,7 @@ export function GamificationBanner({ variant = 'banner' }: GamificationBannerPro
             )}
           </div>
           <span className="text-xs font-bold hidden sm:inline pr-1">
-            {hasPlayedGame ? 'Voucher Diskon' : 'Kuis Seputar Velours'}
+            {hasPlayedGame ? 'Voucher Diskon' : 'Kuis AYAMAJA'}
           </span>
         </button>
 
@@ -107,23 +107,23 @@ export function GamificationBanner({ variant = 'banner' }: GamificationBannerPro
       <div
         className={`w-full rounded-2xl p-4 sm:p-5 border transition-all shadow-md relative overflow-hidden ${
           isEligible
-            ? 'bg-gradient-to-br from-amber-900 via-amber-800 to-orange-950 text-amber-50 border-amber-500/50'
-            : 'bg-gradient-to-br from-amber-50 via-amber-100/60 to-orange-50 text-amber-950 border-amber-300'
+            ? 'bg-gradient-to-br from-red-900 via-red-800 to-orange-950 text-white border-red-500/50'
+            : 'bg-gradient-to-br from-red-50 via-amber-50 to-orange-50 text-slate-900 border-red-200'
         }`}
       >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
           <div className="flex items-center gap-3.5">
             <div
               className={`p-3 rounded-2xl shadow-inner ${
-                isEligible ? 'bg-amber-700/80 text-amber-200' : 'bg-amber-200 text-amber-900'
+                isEligible ? 'bg-red-700/80 text-amber-200' : 'bg-red-100 text-red-900'
               }`}
             >
               <Sparkles className="h-6 w-6 text-amber-300 animate-pulse" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="font-serif font-bold text-base sm:text-lg tracking-wide">
-                  🧠 Kuis Seputar Velours & Diskon Easter Egg
+                <h4 className="font-bold text-base sm:text-lg tracking-wide">
+                  🧠 Kuis AYAMAJA & Voucher Diskon Ayam Segar
                 </h4>
                 {appliedDiscount ? (
                   <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[11px] px-2 py-0.5 rounded-full font-bold">
@@ -135,21 +135,21 @@ export function GamificationBanner({ variant = 'banner' }: GamificationBannerPro
                   </span>
                 ) : null}
               </div>
-              <p className={`text-xs sm:text-sm mt-1 max-w-xl ${isEligible ? 'text-amber-200/90' : 'text-amber-900/80'}`}>
+              <p className={`text-xs sm:text-sm mt-1 max-w-xl ${isEligible ? 'text-red-100' : 'text-slate-600'}`}>
                 {isEligible ? (
                   hasPlayedGame ? (
                     <span>
-                      🎉 <strong>Anda telah menyelesaikan 1x kesempatan kuis!</strong> Kode voucher diskon Easter Egg Anda siap digunakan di keranjang.
+                      🎉 <strong>Anda telah menyelesaikan 1x kesempatan kuis!</strong> Kode voucher diskon AYAMAJA siap digunakan di keranjang.
                     </span>
                   ) : (
                     <span>
-                      🎉 <strong>Hore! 1x Kesempatan kuis terbuka!</strong> Jawab 3 pertanyaan seputar Velours Patisserie & buka Voucher Diskon Easter Egg hingga 15%!
+                      🎉 <strong>Hore! 1x Kesempatan kuis terbuka!</strong> Jawab 3 pertanyaan seputar AYAMAJA Minahasa Utara & buka Voucher Diskon hingga 15%!
                     </span>
                   )
                 ) : (
                   <span>
-                    Belanja di atas <strong className="underline">Rp 100.000</strong> untuk membuka Kuis Seputar Velours & diskon rahasia! (Masih kurang{' '}
-                    <strong className="text-amber-950 font-bold">{formatIDR(neededAmount)}</strong> lagi)
+                    Belanja di atas <strong className="underline">Rp 100.000</strong> untuk membuka Kuis AYAMAJA & diskon rahasia! (Masih kurang{' '}
+                    <strong className="text-red-950 font-bold">{formatIDR(neededAmount)}</strong> lagi)
                   </span>
                 )}
               </p>
@@ -161,8 +161,8 @@ export function GamificationBanner({ variant = 'banner' }: GamificationBannerPro
             size="lg"
             className={`w-full sm:w-auto font-bold shrink-0 ${
               isEligible
-                ? 'bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-lg'
-                : 'bg-amber-800 hover:bg-amber-900 text-white'
+                ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-lg'
+                : 'bg-red-600 hover:bg-red-700 text-white'
             }`}
           >
             {isEligible ? (

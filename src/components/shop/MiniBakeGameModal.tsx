@@ -19,27 +19,37 @@ interface Question {
   explanation: string;
 }
 
-const VELOURS_QUESTIONS: Question[] = [
+const AYAMAJA_QUESTIONS: Question[] = [
   {
     id: 1,
-    question: 'Bahan utama apa yang digunakan Velours Patisserie untuk membuat tekstur pastry renyah dan harum khas Prancis?',
-    options: ['Margarin Olahan', 'Normandy Butter Asli Prancis', 'Minyak Kelapa Sawit', 'Mentega Putih'],
+    question: 'Bahan baku utama apa yang disajikan oleh AYAMAJA Minahasa Utara setiap harinya?',
+    options: [
+      'Daging Olahan Beku Impor',
+      'Ayam Potong Segar Subuh 04:00 WITA dari Peternak Lokal',
+      'Ayam Olahan Kaleng',
+      'Daging Sintetis'
+    ],
     correctIndex: 1,
-    explanation: 'Velours Patisserie menggunakan Normandy Butter impor khas Prancis untuk cita rasa autentik!',
+    explanation: 'AYAMAJA selalu menyediakan ayam broiler & kampung yang dipotong segar jam 04:00 WITA langsung dari peternak lokal Minahasa Utara!',
   },
   {
     id: 2,
-    question: 'Teknik ragi & adonan apa yang dipakai Velours Patisserie untuk memanggang roti segar setiap pagi?',
-    options: ['Sourdough Fermentation (Fermentasi Alami)', 'Baking Powder Instan', 'Pengembang Sintetis', 'Ragi Kimia Tinggi'],
+    question: 'Apa keunggulan utama sistem penimbangan AYAMAJA untuk pesanan ayam segar Anda?',
+    options: [
+      'Flexible Weight & Smart Pricing (Harga akurat sesuai berat riil timbangan)',
+      'Berat Dipatok Tanpa Penimbangan',
+      'Tidak Ada Struk Penimbangan',
+      'Sistem Timbangan Manual Rusak'
+    ],
     correctIndex: 0,
-    explanation: 'Seluruh roti kami dibuat menggunakan teknik Sourdough Fermentation alami tanpa bahan pengawet.',
+    explanation: 'Sistem AYAMAJA menjamin harga dihitung transparan sesuai berat aktual hasil timbangan digital jagal.',
   },
   {
     id: 3,
-    question: 'Berapa batas minimal total belanja di Velours Patisserie untuk membuka kesempatan main Mini Game & diskon rahasia?',
+    question: 'Berapa batas minimal total belanja di AYAMAJA untuk membuka kesempatan kuis & voucher diskon rahasia?',
     options: ['Rp 50.000', 'Rp 75.000', 'Rp 100.000', 'Rp 250.000'],
     correctIndex: 2,
-    explanation: 'Tepat sekali! Pembelian di atas Rp 100.000 memberikan 1x kesempatan main.',
+    explanation: 'Tepat sekali! Pembelian di atas Rp 100.000 memberikan 1x kesempatan kuis & voucher diskon rahasia.',
   },
 ];
 
@@ -54,7 +64,7 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [gameState, setGameState] = useState<'READY' | 'QUIZ' | 'RESULT' | 'ALREADY_PLAYED'>('READY');
-  const [unlockedCode, setUnlockedCode] = useState('EASTERBAKE15');
+  const [unlockedCode, setUnlockedCode] = useState('AYAMFRESH15');
   const [applySuccessMsg, setApplySuccessMsg] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -85,29 +95,26 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
   };
 
   const handleSelectOption = (index: number) => {
-    if (selectedOption !== null) return; // Prevent double selection
+    if (selectedOption !== null) return;
     setSelectedOption(index);
 
-    const isCorrect = index === VELOURS_QUESTIONS[currentQuestionIndex].correctIndex;
+    const isCorrect = index === AYAMAJA_QUESTIONS[currentQuestionIndex].correctIndex;
     const newScore = isCorrect ? score + 1 : score;
     if (isCorrect) setScore(newScore);
 
-    // Auto advance after 1.2 seconds
     setTimeout(() => {
-      if (currentQuestionIndex + 1 < VELOURS_QUESTIONS.length) {
+      if (currentQuestionIndex + 1 < AYAMAJA_QUESTIONS.length) {
         setCurrentQuestionIndex((prev) => prev + 1);
         setSelectedOption(null);
       } else {
-        // Quiz Finished - Mark as Played (1x chance limit per payment session)
         setHasPlayedGame(true);
         setGameState('RESULT');
 
-        // Choose Easter Egg Code based on score
         if (newScore >= 2) {
-          const codes = ['EASTERBAKE15', 'BAKER20K'];
+          const codes = ['AYAMFRESH15', 'MINUT20K'];
           setUnlockedCode(codes[Math.floor(Math.random() * codes.length)]);
         } else {
-          setUnlockedCode('SECRETBAKE10');
+          setUnlockedCode('AYAMCHICKEN10');
         }
       }
     }, 1200);
@@ -115,29 +122,25 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
 
   const handleApplyDiscount = () => {
     const res = applyDiscountCode(unlockedCode);
-    if (res.success) {
-      setApplySuccessMsg(res.message);
-    } else {
-      setApplySuccessMsg(res.message);
-    }
+    setApplySuccessMsg(res.message);
   };
 
   if (!isOpen) return null;
 
-  const currentQ = VELOURS_QUESTIONS[currentQuestionIndex];
+  const currentQ = AYAMAJA_QUESTIONS[currentQuestionIndex];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-background rounded-2xl shadow-2xl border border-amber-200/60 overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-red-200 overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-800 via-amber-900 to-orange-950 text-amber-50 p-4 px-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-serif font-bold text-lg">
+        <div className="bg-gradient-to-r from-red-700 via-red-800 to-orange-900 text-white p-4 px-6 flex items-center justify-between">
+          <div className="flex items-center gap-2 font-bold text-lg">
             <Sparkles className="h-5 w-5 text-amber-300 animate-pulse" />
-            <span>Kuis Seputar Velours Patisserie</span>
+            <span>Kuis AYAMAJA Minahasa Utara</span>
           </div>
           <button
             onClick={onClose}
-            className="text-amber-200 hover:text-white p-1 rounded-full hover:bg-amber-800/60 transition"
+            className="text-white hover:bg-white/20 p-1 rounded-full transition"
           >
             <X className="h-5 w-5" />
           </button>
@@ -146,55 +149,52 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
         {/* Body Content */}
         <div className="p-6 space-y-6">
           {!isEligible ? (
-            /* Locked State for < 100.000 IDR */
             <div className="text-center py-6 space-y-4">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-800 shadow-inner">
-                <Lock className="h-8 w-8 text-amber-700" />
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-800 shadow-inner">
+                <Lock className="h-8 w-8 text-red-700" />
               </div>
 
               <div>
-                <Badge variant="outline" className="border-amber-500 text-amber-800 bg-amber-50 mb-2">
+                <Badge variant="outline" className="border-red-500 text-red-800 bg-red-50 mb-2">
                   Syarat Belanja Belum Terpenuhi
                 </Badge>
-                <h3 className="text-xl font-bold text-slate-800 font-serif">Kuis Seputar Velours Terkunci</h3>
+                <h3 className="text-xl font-bold text-slate-900">Kuis AYAMAJA Terkunci</h3>
                 <p className="text-sm text-slate-600 mt-2 max-w-xs mx-auto">
-                  Kuis ini khusus untuk pembelian di atas <span className="font-bold text-amber-900">Rp 100.000</span> (Hanya 1x kesempatan bermain sebelum pembayaran).
+                  Kuis ini khusus untuk pembelian ayam di atas <span className="font-bold text-red-700">Rp 100.000</span>.
                 </p>
               </div>
 
-              {/* Progress Bar */}
-              <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-left space-y-2">
+              <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-left space-y-2">
                 <div className="flex justify-between text-xs font-semibold text-slate-700">
                   <span>Keranjang Saat Ini: {formatIDR(subtotal)}</span>
                   <span>Target: {formatIDR(100000)}</span>
                 </div>
                 <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
                   <div
-                    className="bg-amber-600 h-full transition-all duration-300 rounded-full"
+                    className="bg-red-600 h-full transition-all duration-300 rounded-full"
                     style={{ width: `${Math.min(100, (subtotal / 100000) * 100)}%` }}
                   />
                 </div>
-                <p className="text-xs text-amber-800 font-medium text-center">
-                  Tambah pastry senilai <span className="font-bold">{formatIDR(neededAmount)}</span> lagi untuk membuka 1x Kesempatan Kuis!
+                <p className="text-xs text-red-800 font-medium text-center">
+                  Tambah pesanan senilai <span className="font-bold">{formatIDR(neededAmount)}</span> lagi untuk membuka Kuis AYAMAJA!
                 </p>
               </div>
 
-              <Button onClick={onClose} className="w-full bg-amber-900 hover:bg-amber-950 text-white font-semibold">
-                Kembali Belanja Pastry
+              <Button onClick={onClose} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold">
+                Kembali Belanja Ayam
               </Button>
             </div>
           ) : gameState === 'ALREADY_PLAYED' ? (
-            /* State when user has ALREADY played their 1x chance */
             <div className="text-center py-6 space-y-5">
-              <div className="w-16 h-16 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center mx-auto shadow-inner">
-                <CheckCircle2 className="h-8 w-8 text-amber-700" />
+              <div className="w-16 h-16 bg-red-100 text-red-800 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <CheckCircle2 className="h-8 w-8 text-red-700" />
               </div>
 
               <div>
-                <Badge className="bg-amber-800 text-white mb-2">1x Kesempatan Main Telah Digunakan</Badge>
-                <h3 className="text-2xl font-serif font-bold text-amber-950">Terima Kasih Sudah Mengikuti Kuis!</h3>
+                <Badge className="bg-red-700 text-white mb-2">1x Kesempatan Main Telah Digunakan</Badge>
+                <h3 className="text-2xl font-bold text-slate-900">Terima Kasih Mengikuti Kuis AYAMAJA!</h3>
                 <p className="text-sm text-slate-600 mt-2 max-w-xs mx-auto">
-                  Anda sudah menggunakan 1x kesempatan main untuk pesanan ini sebelum melakukan pembayaran.
+                  Anda telah menggunakan kesempatan bermain untuk transaksi ini.
                 </p>
               </div>
 
@@ -206,24 +206,23 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
                 </div>
               ) : (
                 <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl space-y-1 text-amber-900">
-                  <div className="text-xs font-semibold">KODE DISKON EASTER EGG ANDA</div>
-                  <div className="text-xl font-mono font-bold text-amber-950">{unlockedCode}</div>
+                  <div className="text-xs font-semibold">KODE DISKON AYAMAJA ANDA</div>
+                  <div className="text-xl font-mono font-bold text-slate-900">{unlockedCode}</div>
                   <Button onClick={handleApplyDiscount} size="sm" className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
                     Pasang Kode Ini
                   </Button>
                 </div>
               )}
 
-              <Button onClick={onClose} className="w-full bg-amber-900 hover:bg-amber-950 text-white font-bold">
+              <Button onClick={onClose} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold">
                 Tutup & Lanjut Ke Pembayaran
               </Button>
             </div>
           ) : (
-            /* Active Game States */
             <>
               {gameState === 'READY' && (
                 <div className="text-center space-y-5 py-2">
-                  <div className="w-16 h-16 bg-gradient-to-tr from-amber-500 to-amber-300 text-white rounded-full flex items-center justify-center mx-auto shadow-lg">
+                  <div className="w-16 h-16 bg-gradient-to-tr from-red-600 to-orange-500 text-white rounded-full flex items-center justify-center mx-auto shadow-lg">
                     <HelpCircle className="h-8 w-8" />
                   </div>
 
@@ -231,9 +230,9 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
                     <Badge className="bg-emerald-600 text-white mb-2">
                       1x Kesempatan Bermain Aktif!
                     </Badge>
-                    <h3 className="text-2xl font-serif font-bold text-amber-950">Kuis Seputar Velours</h3>
+                    <h3 className="text-2xl font-bold text-slate-900">Kuis AYAMAJA Ayam Segar</h3>
                     <p className="text-sm text-slate-600 mt-2 max-w-sm mx-auto">
-                      Jawab 3 pertanyaan seputar kelezatan roti & pastry Velours Patisserie untuk membuka Kode Diskon Easter Egg Rahasia!
+                      Jawab 3 pertanyaan seputar AYAMAJA Minahasa Utara untuk membuka Voucher Diskon Potongan Ayam hingga 15%!
                     </p>
                   </div>
 
@@ -242,40 +241,37 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
                       <AlertCircle className="h-3.5 w-3.5 text-amber-700" />
                       <span>Catatan Penting:</span>
                     </div>
-                    <p>Kuis ini hanya dapat dimainkan **1x kesempatan** sebelum melakukan pembayaran.</p>
+                    <p>Kuis ini dapat dimainkan 1x sebelum melakukan pembayaran.</p>
                   </div>
 
                   <Button
                     onClick={handleStartQuiz}
-                    className="w-full py-6 text-lg font-bold bg-amber-900 hover:bg-amber-950 text-white shadow-lg hover:shadow-xl transition"
+                    className="w-full py-6 text-lg font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl transition"
                   >
-                    🧠 Mulai Kuis Seputar Velours
+                    🧠 Mulai Kuis AYAMAJA
                   </Button>
                 </div>
               )}
 
               {gameState === 'QUIZ' && (
                 <div className="space-y-5">
-                  {/* Progress Header */}
-                  <div className="flex justify-between items-center bg-amber-50 px-4 py-2 rounded-xl border border-amber-200 text-xs font-bold text-amber-900">
-                    <span>Pertanyaan {currentQuestionIndex + 1} dari {VELOURS_QUESTIONS.length}</span>
+                  <div className="flex justify-between items-center bg-red-50 px-4 py-2 rounded-xl border border-red-200 text-xs font-bold text-red-900">
+                    <span>Pertanyaan {currentQuestionIndex + 1} dari {AYAMAJA_QUESTIONS.length}</span>
                     <span>Skor: {score}</span>
                   </div>
 
-                  {/* Question Title */}
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <h4 className="text-base font-bold text-slate-800 font-serif leading-snug">
+                    <h4 className="text-base font-bold text-slate-900 leading-snug">
                       {currentQ.question}
                     </h4>
                   </div>
 
-                  {/* Options List */}
                   <div className="space-y-2.5">
                     {currentQ.options.map((option, idx) => {
                       const isSelected = selectedOption === idx;
                       const isCorrect = idx === currentQ.correctIndex;
 
-                      let btnStyle = 'border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 text-slate-800';
+                      let btnStyle = 'border-slate-200 hover:border-red-400 hover:bg-red-50/50 text-slate-800';
                       if (selectedOption !== null) {
                         if (isCorrect) {
                           btnStyle = 'bg-emerald-100 border-emerald-500 text-emerald-950 font-bold';
@@ -306,7 +302,7 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
                   </div>
 
                   {selectedOption !== null && (
-                    <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-xs text-amber-900 animate-in fade-in duration-200">
+                    <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-xs text-amber-900">
                       <strong>Penjelasan:</strong> {currentQ.explanation}
                     </div>
                   )}
@@ -314,35 +310,34 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
               )}
 
               {gameState === 'RESULT' && (
-                <div className="text-center space-y-5 py-2 animate-in zoom-in-95 duration-200">
+                <div className="text-center space-y-5 py-2">
                   <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
                     <Trophy className="h-8 w-8 text-emerald-700 animate-bounce" />
                   </div>
 
                   <div>
-                    <Badge className="bg-amber-800 text-white mb-2">Kuis Selesai!</Badge>
-                    <h3 className="text-2xl font-serif font-bold text-amber-950">
-                      Skor Anda: {score} / {VELOURS_QUESTIONS.length}
+                    <Badge className="bg-red-700 text-white mb-2">Kuis Selesai!</Badge>
+                    <h3 className="text-2xl font-bold text-slate-900">
+                      Skor Anda: {score} / {AYAMAJA_QUESTIONS.length}
                     </h3>
                     <p className="text-sm text-slate-600 mt-1">
                       {score >= 2
-                        ? 'Luar biasa! Anda sangat mengenal kualitas Velours Patisserie!'
-                        : 'Terima kasih telah mengikuti kuis Velours Patisserie!'}
+                        ? 'Luar biasa! Anda paham betul keunggulan ayam segar AYAMAJA!'
+                        : 'Terima kasih telah mengikuti kuis AYAMAJA!'}
                     </p>
                   </div>
 
-                  {/* Coupon Box */}
-                  <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-2 border-dashed border-amber-400 p-4 rounded-xl space-y-2">
-                    <div className="text-xs text-amber-800 font-bold uppercase tracking-wider">
-                      🎁 KODE DISKON EASTER EGG UNLOCKED
+                  <div className="bg-gradient-to-r from-red-50 via-amber-50 to-orange-50 border-2 border-dashed border-red-400 p-4 rounded-xl space-y-2">
+                    <div className="text-xs text-red-800 font-bold uppercase tracking-wider">
+                      🎁 VOUCHER DISKON AYAMAJA UNLOCKED
                     </div>
-                    <div className="text-2xl font-mono font-black text-amber-950 tracking-wider">
+                    <div className="text-2xl font-mono font-black text-slate-900 tracking-wider">
                       {unlockedCode}
                     </div>
                     <div className="text-xs text-emerald-700 font-semibold">
-                      {unlockedCode === 'EASTERBAKE15' && '✨ Diskon 15% OFF (Potongan langsung)'}
-                      {unlockedCode === 'BAKER20K' && '✨ Potongan Langsung Rp 20.000'}
-                      {unlockedCode === 'SECRETBAKE10' && '✨ Diskon Rahasia 10% OFF'}
+                      {unlockedCode === 'AYAMFRESH15' && '✨ Diskon 15% OFF Ayam Segar'}
+                      {unlockedCode === 'MINUT20K' && '✨ Potongan Langsung Rp 20.000'}
+                      {unlockedCode === 'AYAMCHICKEN10' && '✨ Diskon Rahasia 10% OFF'}
                     </div>
                   </div>
 
@@ -375,7 +370,7 @@ export function MiniBakeGameModal({ isOpen, onClose }: MiniBakeGameModalProps) {
                   <Button
                     variant="outline"
                     onClick={onClose}
-                    className="w-full border-amber-300 text-amber-900 hover:bg-amber-50 font-semibold"
+                    className="w-full border-red-300 text-red-900 hover:bg-red-50 font-semibold"
                   >
                     Tutup & Lanjut Ke Checkout
                   </Button>
